@@ -93,6 +93,7 @@ public class Analyzer {
 
                 if (Math.abs(originValue - targetValue) > 0.1) {
                     newValues.add(originValue);
+//                }
                 } else {
                     newValues.add(0.0f);
                 }

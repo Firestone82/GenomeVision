@@ -38,10 +38,14 @@ public class ScanViewer extends ZoomableGrabbablePane {
         panel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
+                if (sample == null) {
+                    return;
+                }
+
                 int col = (int) ((e.getX() - getTranslateX()) / getScale() / (CELL_WIDTH + 1));
                 int row = (int) ((e.getY() - getTranslateY()) / getScale() / (CELL_HEIGHT + 1));
 
-                if (sample != null && row >= 0 && row < sample.getMatrix2D().getRows() && col >= 0 && col < sample.getMatrix2D().getColumns()) {
+                if (row >= 0 && row < sample.getMatrix2D().getRows() && col >= 0 && col < sample.getMatrix2D().getColumns()) {
                     if (selectedCell != null && selectedCell.first() == row && selectedCell.second() == col) {
                         return;
                     }

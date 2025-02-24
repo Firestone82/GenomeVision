@@ -10,7 +10,7 @@ public class CloseFileMenuItem extends JMenuItem implements ActionListener {
     private final FileMenu fileMenu;
 
     public CloseFileMenuItem(FileMenu fileMenu) {
-        super("Close");
+        super("Close file");
         this.fileMenu = fileMenu;
         addActionListener(this);
     }

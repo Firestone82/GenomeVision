@@ -1,31 +1,64 @@
 package cz.mik0486.semestralproject.viewer.analyzer.gui;
 
-import cz.mik0486.semestralproject.data.holder.Matrix2D;
+import cz.mik0486.semestralproject.data.DataHandler;
+import cz.mik0486.semestralproject.data.holder.Pair;
 import cz.mik0486.semestralproject.data.holder.Sample;
 import cz.mik0486.semestralproject.gui.ZoomableGrabbablePane;
+import cz.mik0486.semestralproject.viewer.analyzer.Analyzer;
+import cz.mik0486.semestralproject.viewer.analyzer.dialog.ProgressiveDialog;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @Getter
 public class ScanViewer extends ZoomableGrabbablePane {
+    private final Analyzer analyzer;
+
+    private static final int CELL_WIDTH = 2;
+    private static final int CELL_HEIGHT = 2;
+
     private Sample sample;
     private BufferedImage cachedImage;
 
-    private static final int CELL_WIDTH = 30;
-    private static final int CELL_HEIGHT = 30;
+    private Pair<Integer, Integer> selectedCell;
 
-    public ScanViewer() {
+    public ScanViewer(Analyzer analyzer) {
         super(false, false, false);
+        this.analyzer = analyzer;
+
+        panel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int col = (int) ((e.getX() - getTranslateX()) / getScale() / (CELL_WIDTH + 1));
+                int row = (int) ((e.getY() - getTranslateY()) / getScale() / (CELL_HEIGHT + 1));
+
+                if (sample != null && row >= 0 && row < sample.getMatrix2D().getRows() && col >= 0 && col < sample.getMatrix2D().getColumns()) {
+                    if (selectedCell != null && selectedCell.first() == row && selectedCell.second() == col) {
+                        return;
+                    }
+
+                    selectedCell = new Pair<>(row, col);
+
+                    float value = sample.getMatrix2D().getValue(row, col);
+                    System.out.println("Hovering over cell at row: " + row + ", col: " + col + " with value: " + value);
+                } else {
+                    selectedCell = null;
+                }
+            }
+        });
     }
 
     @Override
     public void paint(Graphics2D g2) {
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
         if (cachedImage != null) {
             g2.drawImage(cachedImage, 0, 0, null);
         } else {
@@ -35,88 +68,49 @@ public class ScanViewer extends ZoomableGrabbablePane {
         }
     }
 
-    private void updateCachedImage() {
-        if (sample == null) {
-            cachedImage = null;
-            return;
-        }
-
-        log.info("Caching scan: {}", sample.getName());
-
-        Matrix2D<Double> matrix = sample.getMatrix2D();
-        int rows = matrix.getRows();
-        int cols = matrix.getColumns();
-
-        // Now safely convert to int.
-        int width = 30 * cols;
-        int height = 30 * rows;
-
-        try {
-            cachedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        } catch (IllegalArgumentException ex) {
-            log.error("Failed to create BufferedImage with dimensions {}x{}", width, height, ex);
-            cachedImage = null;
-            return;
-        }
-
-        Graphics2D g2d = cachedImage.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Use a slightly larger font for clarity.
-        g2d.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        // Draw each cell.
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                Double value = matrix.getValue(i, j);
-                int x = j * CELL_WIDTH;
-                int y = i * CELL_HEIGHT;
-
-                if (value != null) {
-                    // Scale the intensity based on the value.
-                    g2d.setColor(new Color(1.0f - value.floatValue(), 1.0f - value.floatValue(), 1.0f));
-                    g2d.fillRect(x, y, CELL_WIDTH, CELL_HEIGHT);
-                }
-
-                // Draw cell border.
-                g2d.setColor(Color.GRAY);
-                g2d.drawRect(x, y, CELL_WIDTH, CELL_HEIGHT);
-
-                // Draw the value as text if available.
-                if (value != null) {
-                    String text = String.format("%.1f", value);
-                    FontMetrics fm = g2d.getFontMetrics();
-                    int textWidth = fm.stringWidth(text);
-                    int textHeight = fm.getAscent();
-                    g2d.setColor(Color.BLACK);
-                    g2d.drawString(text, x + (CELL_WIDTH - textWidth) / 2, y + (CELL_HEIGHT + textHeight) / 2);
-                }
-            }
-        }
-        g2d.dispose();
-    }
-
-    public void setScan(Sample sample) {
+    public void openSample(@NonNull Sample sample) {
+        long startTime = System.currentTimeMillis();
         this.sample = sample;
 
-        if (sample != null) {
-            updateCachedImage();
-            enable();
-        } else {
-            disable();
-            cachedImage = null;
+        SwingWorker<BufferedImage, Void> worker = new SwingWorker<>() {
+
+            @Override
+            protected BufferedImage doInBackground() {
+                return DataHandler.loadImage(sample, CELL_WIDTH, CELL_HEIGHT, this::setProgress);
+            }
+        };
+
+        log.info("Loading image for scan: {}", sample.getName());
+        worker.execute();
+
+        new ProgressiveDialog<BufferedImage>(
+            analyzer.getViewer(),
+            "Caching scan: " + sample.getName(),
+            "Caching scan data, please wait..."
+        ).open(worker);
+
+        try {
+            cachedImage = worker.get();
+
+            log.info("Finished caching scan in {}ms", System.currentTimeMillis() - startTime);
+        } catch (CancellationException ignored) {
+            log.warn("Loading of scan data was cancelled");
+        } catch (ExecutionException | InterruptedException e) {
+            log.error("Failed to load scan data: {}", e.getMessage());
         }
+
+        setGrabbable(true);
+        setZoomable(true);
 
         panel.repaint();
     }
 
-    public void enable() {
-        setGrabbable(true);
-        setZoomable(true);
-    }
+    public void closeSample() {
+        cachedImage = null;
 
-    public void disable() {
         setGrabbable(false);
         setZoomable(false);
+
+        panel.repaint();
     }
 }

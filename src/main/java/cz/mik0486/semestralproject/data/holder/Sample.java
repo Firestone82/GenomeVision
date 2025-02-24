@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Sample {
 
     private String name;
-    private Matrix2D<Double> matrix2D;
+    private Matrix matrix2D;
 
     @Override
     public String toString() {

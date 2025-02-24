@@ -6,14 +6,14 @@ import java.util.Collections;
 import java.util.Vector;
 
 @Data
-public class Matrix2D<T> {
+public class Matrix {
 
     private final int rows;
     private final int columns;
-    private final Vector<T> data;
-    private final T defaultValue;
+    private final Vector<Float> data;
+    private final float defaultValue;
 
-    public Matrix2D(int rows, int columns, T defaultValue) {
+    public Matrix(int rows, int columns, float defaultValue) {
         this.rows = rows;
         this.columns = columns;
         this.defaultValue = defaultValue;
@@ -22,16 +22,16 @@ public class Matrix2D<T> {
         this.data.addAll(Collections.nCopies(rows * columns, defaultValue));
     }
 
-    public void setData(Vector<T> data) {
+    public void setData(Vector<Float> data) {
         this.data.clear();
         this.data.addAll(data);
     }
 
-    public void setValue(int row, int column, T value) {
+    public void setValue(int row, int column, float value) {
         data.set(row * columns + column, value);
     }
 
-    public T getValue(int row, int column) {
+    public float getValue(int row, int column) {
         int index = row * columns + column;
 
         if (index >= data.size()) {
@@ -56,8 +56,8 @@ public class Matrix2D<T> {
         return new Pair<>(rows, cols);
     }
 
-    public static <T> Matrix2D<T> createBySize(int size, T defaultValue) {
+    public static Matrix createBySize(int size, float defaultValue) {
         Pair<Integer, Integer> dimensions = calculateDimensions(size);
-        return new Matrix2D<>(dimensions.first(), dimensions.second(), defaultValue);
+        return new Matrix(dimensions.first(), dimensions.second(), defaultValue);
     }
 }

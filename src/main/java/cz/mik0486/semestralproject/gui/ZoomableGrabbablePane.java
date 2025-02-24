@@ -3,6 +3,7 @@ package cz.mik0486.semestralproject.gui;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.AffineTransform;
 
+@Slf4j
 @Getter
 public abstract class ZoomableGrabbablePane {
     protected final JPanel panel;
@@ -112,17 +114,6 @@ public abstract class ZoomableGrabbablePane {
                 lastMousePoint = null;
             }
         });
-    }
-
-    public void resetZoom() {
-        scale = 1.0;
-        translateX = 0;
-        translateY = 0;
-        panel.repaint();
-    }
-
-    public boolean isZoomed() {
-        return scale != 1.0 || translateX != 0 || translateY != 0;
     }
 
     public abstract void paint(Graphics2D g2);

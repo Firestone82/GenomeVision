@@ -1,6 +1,6 @@
 package cz.mik0486.semestralprojekt.gen;
 
-import cz.mik0486.semestralproject.data.holder.Matrix2D;
+import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,7 +16,7 @@ public class MatrixTest {
     @ParameterizedTest
     @CsvSource({"16, 4, 4", "20, 4, 5", "1, 1, 1", "0, 0, 0", "1000000, 1000, 1000"})
     void calculateDimensions(int size, int rows, int cols) {
-        Pair<Integer, Integer> dimensions = Matrix2D.calculateDimensions(size);
+        Pair<Integer, Integer> dimensions = Matrix.calculateDimensions(size);
 
         assertEquals(rows, dimensions.first());
         assertEquals(cols, dimensions.second());
@@ -24,7 +24,7 @@ public class MatrixTest {
 
     @Test
     void create() {
-        Matrix2D<Double> matrix = new Matrix2D<>(2, 3, 0.0);
+        Matrix<Double> matrix = new Matrix<>(2, 3, 0.0);
         matrix.setData(new Vector<>(List.of(
             1.0, 2.0, 3.0,
             4.0, 5.0

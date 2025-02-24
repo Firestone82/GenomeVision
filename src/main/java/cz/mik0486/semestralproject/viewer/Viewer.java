@@ -5,9 +5,10 @@ import cz.mik0486.semestralproject.data.DataHandler;
 import cz.mik0486.semestralproject.data.exception.ScanLoadException;
 import cz.mik0486.semestralproject.data.holder.Sample;
 import cz.mik0486.semestralproject.viewer.analyzer.Analyzer;
-import cz.mik0486.semestralproject.viewer.analyzer.dialog.FileLoadDialog;
+import cz.mik0486.semestralproject.viewer.analyzer.dialog.ProgressiveDialog;
 import cz.mik0486.semestralproject.viewer.menu.Menu;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -22,10 +23,10 @@ import java.util.concurrent.ExecutionException;
 @Getter
 public class Viewer extends JFrame {
 
-    // Data
     private final List<Sample> samples = new ArrayList<>();
+    private File file;
 
-    // Windows
+    // View panels
     private final Analyzer analyzer;
 
     public Viewer() {
@@ -38,19 +39,16 @@ public class Viewer extends JFrame {
         setSize(800, 600);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
-
-        // Initialize menu
-        Menu menu = new Menu(this);
-        this.setJMenuBar(menu);
+        setJMenuBar(new Menu(this));
 
         // Initialize scan selector
         this.analyzer = new Analyzer(this);
-
         this.add(analyzer.getPanel());
     }
 
-    public void openFile(File file) {
+    public void openFile(@NonNull File file) {
         long startTime = System.currentTimeMillis();
+        this.file = file;
 
         SwingWorker<List<Sample>, Void> worker = new SwingWorker<>() {
 
@@ -63,8 +61,11 @@ public class Viewer extends JFrame {
         log.info("Loading CSV file '{}'", file.getPath());
         worker.execute();
 
-        JDialog loadingDialog = new FileLoadDialog(this, worker);
-        loadingDialog.setVisible(true);
+        new ProgressiveDialog<List<Sample>>(
+            this,
+            "Load file: " + file.getName(),
+            "Loading file, please wait..."
+        ).open(worker);
 
         try {
             List<Sample> data = worker.get();

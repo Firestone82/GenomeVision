@@ -2,7 +2,9 @@ package cz.mik0486.semestralproject.data.holder;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Vector;
 
 @Data
@@ -10,7 +12,7 @@ public class Matrix {
 
     private final int rows;
     private final int columns;
-    private final Vector<Float> data;
+    private final List<Float> data;
     private final float defaultValue;
 
     public Matrix(int rows, int columns, float defaultValue) {
@@ -18,7 +20,7 @@ public class Matrix {
         this.columns = columns;
         this.defaultValue = defaultValue;
 
-        this.data = new Vector<>(rows * columns);
+        this.data = new ArrayList<>(rows * columns);
         this.data.addAll(Collections.nCopies(rows * columns, defaultValue));
     }
 

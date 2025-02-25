@@ -2,28 +2,29 @@ package cz.mik0486.semestralproject.gui;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Getter
-public abstract class DropdownSelector<T> {
-    private final JPanel panel = new JPanel();
+public class DropdownSelector<T> {
 
-    private final JLabel label;
+    private final JPanel dropdown = new JPanel();
     private final JComboBox<T> comboBox;
-    private final String defaultText = "Click to select";
 
-    public DropdownSelector(String labelText) {
-        panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+    @Setter
+    private Consumer<T> onSelected;
 
-        label = new JLabel(labelText);
-        panel.add(label);
+    public DropdownSelector() {
+        dropdown.setLayout(new BorderLayout());
+        dropdown.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         comboBox = new JComboBox<>();
         comboBox.addItem(null);
-        panel.add(comboBox);
+        comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, comboBox.getPreferredSize().height));
 
         comboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -31,7 +32,7 @@ public abstract class DropdownSelector<T> {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
                 if (value == null) {
-                    setText(defaultText);
+                    setText("Click to select");
                     setForeground(Color.GRAY);
                 } else {
                     setText(value.toString());
@@ -43,36 +44,49 @@ public abstract class DropdownSelector<T> {
         });
 
         comboBox.addActionListener(e -> {
-            @SuppressWarnings("unchecked")
-            T selected = (T) comboBox.getSelectedItem();
+            T selected = getSelected();
 
             if (selected != null) {
                 if (comboBox.getItemCount() > 0 && comboBox.getItemAt(0) == null) {
                     comboBox.removeItemAt(0);
                 }
 
-                onSelected(selected);
+                if (onSelected != null) {
+                    onSelected.accept(selected);
+                }
             }
         });
     }
 
-    public void setItems(@NonNull List<T> items) {
-        comboBox.removeAllItems();
+    public JPanel initUI(String label) {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
 
-        comboBox.addItem(null);
+        JLabel jLabel = new JLabel(label);
+        jLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        jPanel.add(jLabel, BorderLayout.WEST);
+
+        jPanel.add(comboBox, BorderLayout.CENTER);
+
+        return jPanel;
+    }
+
+    public void setItems(@NonNull List<T> items) {
+        clearItems();
+
         for (T item : items) {
             comboBox.addItem(item);
         }
-
-        comboBox.setSelectedItem(null);
-        comboBox.repaint();
     }
 
     public void clearItems() {
         comboBox.removeAllItems();
         comboBox.addItem(null);
-        comboBox.repaint();
+        comboBox.setSelectedItem(null);
     }
 
-    public abstract void onSelected(@NonNull T selected);
+    @SuppressWarnings("unchecked")
+    public T getSelected() {
+        return (T) comboBox.getSelectedItem();
+    }
 }

@@ -43,7 +43,7 @@ public class Viewer extends JFrame {
 
         // Initialize scan selector
         this.analyzer = new Analyzer(this);
-        this.add(analyzer.getPanel());
+        this.analyzer.initUI(this);
     }
 
     public void openFile(@NonNull File file) {
@@ -84,7 +84,7 @@ public class Viewer extends JFrame {
 
     public void closeFile() {
         samples.clear();
-        analyzer.setData(null);
+        analyzer.clearData();
     }
 
     public void exit() {

@@ -2,80 +2,108 @@ package cz.mik0486.semestralproject.viewer.analyzer;
 
 import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Sample;
+import cz.mik0486.semestralproject.gui.ChecklistSelector;
 import cz.mik0486.semestralproject.gui.DropdownSelector;
+import cz.mik0486.semestralproject.gui.ShiftSelector;
 import cz.mik0486.semestralproject.viewer.Viewer;
 import cz.mik0486.semestralproject.viewer.analyzer.gui.ScanViewer;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Getter
 public class Analyzer {
-    private final JPanel panel = new JPanel(new BorderLayout());
     private final Viewer viewer;
 
     // Panel components
     private final ScanViewer scanViewer;
+    private final ShiftSelector shifterSelector;
     private final DropdownSelector<Sample> scanSelector;
-
-    private final ScanViewer compareViewer;
-    private final DropdownSelector<Sample> compareSelector;
+    private final ChecklistSelector<Sample> checklistSelector;
 
     public Analyzer(Viewer viewer) {
         this.viewer = viewer;
 
         scanViewer = new ScanViewer(this);
-        scanSelector = new DropdownSelector<>("View sample:") {
-            @Override
-            public void onSelected(@NonNull Sample selected) {
-                log.info("Selected scan: {}", selected.getName());
-                scanViewer.openSample(selected);
-            }
-        };
 
-        compareViewer = new ScanViewer(this);
-        compareSelector = new DropdownSelector<>("Compare with:") {
-            @Override
-            public void onSelected(@NonNull Sample selected) {
-                log.info("Selected compare: {}", selected.getName());
-                compareViewer.openSample(compare(scanViewer.getSample(), selected));
-            }
-        };
+        shifterSelector = new ShiftSelector(0, 100, 50);
+        shifterSelector.setOnShifted(shifted -> {
+            log.info("Shifted by: {}", shifted);
+        });
 
-        initUI();
+        scanSelector = new DropdownSelector<>();
+        scanSelector.setOnSelected(selected -> {
+            log.info("Selected scan: {}", selected.getName());
+            scanViewer.openSample(selected);
+        });
+
+        checklistSelector = new ChecklistSelector<>();
+        checklistSelector.setOnSelected(selected -> {
+            log.info("Selected checks: {}", selected.stream().map(Sample::getName).collect(Collectors.joining(", ")));
+        });
     }
 
-    private void initUI() {
-        JPanel controlPanel = new JPanel(new GridLayout());
-        controlPanel.add(scanSelector.getPanel());
-        controlPanel.add(compareSelector.getPanel());
+    public void initUI(JFrame frame) {
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 0));
 
-        JPanel paneContainer = new JPanel(new GridLayout(1, 2, 10, 0));
-        paneContainer.add(scanViewer.getPanel());
-        paneContainer.add(compareViewer.getPanel());
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        panel.add(controlPanel, BorderLayout.NORTH);
-        panel.add(paneContainer, BorderLayout.CENTER);
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(leftPanel, BorderLayout.CENTER);
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+
+        /*
+         * LEFT  PANEL
+         */
+
+        leftPanel.add(scanViewer.getPanel(), BorderLayout.CENTER);
+
+        /*
+         * RIGHT PANEL
+         */
+
+        JPanel upperPanel = new JPanel();
+        upperPanel.setLayout(new BoxLayout(upperPanel, BoxLayout.Y_AXIS));
+        upperPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        rightPanel.add(upperPanel, BorderLayout.NORTH);
+
+        JPanel shifterPanel = shifterSelector.initUI("Epsilon:");
+        upperPanel.add(shifterPanel);
+        upperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JPanel dropdownPanel = scanSelector.initUI("Select sample:");
+        upperPanel.add(dropdownPanel);
+
+        JScrollPane checklistPanel = checklistSelector.initUI("Compare with:");
+        rightPanel.add(checklistPanel, BorderLayout.CENTER);
+
+        JButton analyzeButton = new JButton("Analyze");
+        analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        bottomPanel.add(analyzeButton, BorderLayout.CENTER);
+        rightPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        frame.add(mainPanel);
     }
 
-    public void setData(@Nullable List<Sample> samples) {
-        if (samples == null) {
-            scanSelector.clearItems();
-            scanViewer.closeSample();
+    public void setData(List<Sample> samples) {
+        scanSelector.setItems(samples);
+        checklistSelector.setItems(samples);
+    }
 
-            compareSelector.clearItems();
-            compareViewer.closeSample();
-        } else {
-            scanSelector.setItems(samples);
-            compareSelector.setItems(samples);
-        }
+    public void clearData() {
+        scanSelector.clearItems();
+        checklistSelector.clearItems();
     }
 
     public Sample compare(Sample origin, Sample target) {
@@ -93,7 +121,6 @@ public class Analyzer {
 
                 if (Math.abs(originValue - targetValue) > 0.1) {
                     newValues.add(originValue);
-//                }
                 } else {
                     newValues.add(0.0f);
                 }

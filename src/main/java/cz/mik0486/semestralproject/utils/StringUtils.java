@@ -1,4 +1,4 @@
-package cz.mik0486.semestralproject.utils.log;
+package cz.mik0486.semestralproject.utils;
 
 import java.nio.charset.StandardCharsets;
 

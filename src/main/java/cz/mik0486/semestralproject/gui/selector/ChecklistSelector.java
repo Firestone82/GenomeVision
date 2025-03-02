@@ -1,6 +1,6 @@
 package cz.mik0486.semestralproject.gui.selector;
 
-import cz.mik0486.semestralproject.utils.log.Debouncer;
+import cz.mik0486.semestralproject.utils.Debouncer;
 import lombok.NonNull;
 import lombok.Setter;
 
@@ -85,6 +85,9 @@ public class ChecklistSelector<T> {
         checkboxes.clear();
         column1.removeAll();
         column2.removeAll();
+
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
     public List<T> getSelected() {

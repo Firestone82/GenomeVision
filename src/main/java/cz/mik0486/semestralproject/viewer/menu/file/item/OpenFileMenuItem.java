@@ -7,6 +7,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Objects;
 
 public class OpenFileMenuItem extends JMenuItem implements ActionListener {
     private final Viewer viewer;
@@ -14,6 +15,10 @@ public class OpenFileMenuItem extends JMenuItem implements ActionListener {
     public OpenFileMenuItem(Viewer viewer) {
         super("Open file");
         this.viewer = viewer;
+
+        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/icons/icons8-add-file-16.png")));
+        setIcon(icon);
+
         addActionListener(this);
     }
 
@@ -40,6 +45,4 @@ public class OpenFileMenuItem extends JMenuItem implements ActionListener {
             case JFileChooser.ERROR_OPTION -> System.err.println("Error occurred while opening file.");
         }
     }
-
-
 }

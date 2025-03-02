@@ -4,6 +4,7 @@ import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Sample;
 import cz.mik0486.semestralproject.gui.ProgressiveDialog;
 import cz.mik0486.semestralproject.gui.ZoomableGrabbablePane;
+import cz.mik0486.semestralproject.utils.MathUtils;
 import cz.mik0486.semestralproject.viewer.analyzer.Analyzer;
 import cz.mik0486.semestralproject.viewer.analyzer.worker.ImageMatrixLoadWorker;
 import lombok.Getter;
@@ -61,7 +62,11 @@ public class ScanViewer extends ZoomableGrabbablePane {
     public void generate() {
         long startTime = System.currentTimeMillis();
 
-        Matrix matrix = Matrix.average(compareSamples.stream().map(Sample::getMatrix).toList());
+        Matrix matrix = Matrix.average(compareSamples.stream()
+            .map(Sample::getMatrix)
+            .toList()
+        );
+
         matrix.apply((x, y, value) -> {
             assert originSample.getMatrix() != null;
 
@@ -79,7 +84,7 @@ public class ScanViewer extends ZoomableGrabbablePane {
         int amountAboveEps = matrix.getData().stream().mapToInt(value -> value > 0.0f ? 1 : 0).sum();
         analyzer.getStatisticsTable().setValue("Amount above epsilon", amountAboveEps);
 
-        float percentage = (float) Math.round((100 - (amountAboveEps / (float) matrix.size()) * 100) * 100) / 100;
+        float percentage = MathUtils.round(100 - (amountAboveEps / (float) matrix.size() * 100), 3);
         analyzer.getStatisticsTable().setValue("Coverage (%)", percentage);
 
         ImageMatrixLoadWorker worker = new ImageMatrixLoadWorker(matrix, CELL_WIDTH, CELL_HEIGHT);

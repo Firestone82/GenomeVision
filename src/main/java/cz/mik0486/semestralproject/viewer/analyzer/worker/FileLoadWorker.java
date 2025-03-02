@@ -2,7 +2,7 @@ package cz.mik0486.semestralproject.viewer.analyzer.worker;
 
 import cz.mik0486.semestralproject.data.exception.ScanLoadException;
 import cz.mik0486.semestralproject.data.holder.Sample;
-import cz.mik0486.semestralproject.utils.log.StringUtils;
+import cz.mik0486.semestralproject.utils.StringUtils;
 import lombok.AllArgsConstructor;
 
 import javax.swing.*;

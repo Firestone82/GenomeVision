@@ -88,11 +88,13 @@ public class Analyzer {
         /*
          * LEFT PANEL
          */
+
         leftPanel.add(scanViewer.getPanel(), BorderLayout.CENTER);
 
         /*
          * RIGHT PANEL
          */
+
         JPanel upperPanel = new JPanel();
         upperPanel.setLayout(new BoxLayout(upperPanel, BoxLayout.Y_AXIS));
         upperPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
@@ -102,25 +104,20 @@ public class Analyzer {
         upperPanel.add(shifterPanel);
         upperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
+        JPanel statsScrollPane = statisticsTable.initUI("Statistics");
+        upperPanel.add(statsScrollPane);
+
+        upperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
         JPanel dropdownPanel = scanViewSelector.initUI("Select sample:");
         upperPanel.add(dropdownPanel);
 
-        // Create a container to hold the checklist and statistics panels
         JPanel centerContainer = new JPanel();
         centerContainer.setLayout(new BoxLayout(centerContainer, BoxLayout.Y_AXIS));
 
-        // Checklist panel remains unchanged
         JScrollPane checklistPanel = scanCompareSelector.initUI("Compare with:");
         centerContainer.add(checklistPanel);
 
-        // Add spacing between checklist and statistics panels
-        centerContainer.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        // Create the StatisticsPanel object
-        JPanel statsScrollPane = statisticsTable.initUI("Statistics");
-        centerContainer.add(statsScrollPane);
-
-        // Add the container to the center of rightPanel
         rightPanel.add(centerContainer, BorderLayout.CENTER);
 
         analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
@@ -167,6 +164,7 @@ public class Analyzer {
 
     public void closeFile() {
         statisticsTable.clear(false);
+        scanViewer.closeSample();
         scanViewSelector.clearItems();
         scanCompareSelector.clearItems();
     }

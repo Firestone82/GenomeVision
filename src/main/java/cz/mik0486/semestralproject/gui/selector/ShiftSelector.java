@@ -1,6 +1,6 @@
 package cz.mik0486.semestralproject.gui.selector;
 
-import cz.mik0486.semestralproject.utils.log.Debouncer;
+import cz.mik0486.semestralproject.utils.Debouncer;
 import lombok.Setter;
 
 import javax.swing.*;

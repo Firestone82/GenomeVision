@@ -1,10 +1,11 @@
-package cz.mik0486.semestralproject.viewer.analyzer.dialog;
+package cz.mik0486.semestralproject.gui;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class ProgressiveDialog<T> extends JDialog {
     private final JProgressBar progressBar;
+    private final JButton cancelButton;
     private SwingWorker<T, Void> worker;
 
     public ProgressiveDialog(JFrame parent, String title, String message) {
@@ -14,6 +15,12 @@ public class ProgressiveDialog<T> extends JDialog {
 
         this.progressBar = new JProgressBar(0, 100);
         this.progressBar.setStringPainted(true);
+
+        cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e2 -> {
+            worker.cancel(true);
+            dispose();
+        });
 
         initUI(message);
     }
@@ -27,8 +34,12 @@ public class ProgressiveDialog<T> extends JDialog {
                 progressBar.setValue(progress);
 
                 if (progress >= 100) {
-                    dispose();
+                    cancelButton.setEnabled(false);
                 }
+            }
+
+            if (worker.isDone()) {
+                dispose();
             }
         });
 
@@ -44,11 +55,6 @@ public class ProgressiveDialog<T> extends JDialog {
         panel.add(label, BorderLayout.NORTH);
         panel.add(progressBar, BorderLayout.CENTER);
 
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e2 -> {
-            worker.cancel(true);
-            dispose();
-        });
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.add(cancelButton);

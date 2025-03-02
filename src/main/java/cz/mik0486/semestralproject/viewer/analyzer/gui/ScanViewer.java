@@ -1,64 +1,34 @@
 package cz.mik0486.semestralproject.viewer.analyzer.gui;
 
-import cz.mik0486.semestralproject.data.DataHandler;
-import cz.mik0486.semestralproject.data.holder.Pair;
+import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Sample;
+import cz.mik0486.semestralproject.gui.ProgressiveDialog;
 import cz.mik0486.semestralproject.gui.ZoomableGrabbablePane;
 import cz.mik0486.semestralproject.viewer.analyzer.Analyzer;
-import cz.mik0486.semestralproject.viewer.analyzer.dialog.ProgressiveDialog;
+import cz.mik0486.semestralproject.viewer.analyzer.worker.ImageMatrixLoadWorker;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
+import java.util.List;
 
 @Slf4j
 @Getter
 public class ScanViewer extends ZoomableGrabbablePane {
     private final Analyzer analyzer;
 
+    private BufferedImage cachedImage;
     private static final int CELL_WIDTH = 2;
     private static final int CELL_HEIGHT = 2;
 
-    private Sample sample;
-    private BufferedImage cachedImage;
-
-    private Pair<Integer, Integer> selectedCell;
+    private Sample originSample;
+    private List<Sample> compareSamples;
+    private int epsilon;
 
     public ScanViewer(Analyzer analyzer) {
         super(false, false, false);
         this.analyzer = analyzer;
-
-        panel.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                if (sample == null) {
-                    return;
-                }
-
-                int col = (int) ((e.getX() - getTranslateX()) / getScale() / (CELL_WIDTH + 1));
-                int row = (int) ((e.getY() - getTranslateY()) / getScale() / (CELL_HEIGHT + 1));
-
-                if (row >= 0 && row < sample.getMatrix2D().getRows() && col >= 0 && col < sample.getMatrix2D().getColumns()) {
-                    if (selectedCell != null && selectedCell.first() == row && selectedCell.second() == col) {
-                        return;
-                    }
-
-                    selectedCell = new Pair<>(row, col);
-
-                    float value = sample.getMatrix2D().getValue(row, col);
-                    System.out.println("Hovering over cell at row: " + row + ", col: " + col + " with value: " + value);
-                } else {
-                    selectedCell = null;
-                }
-            }
-        });
     }
 
     @Override
@@ -72,35 +42,60 @@ public class ScanViewer extends ZoomableGrabbablePane {
         }
     }
 
-    public void openSample(@NonNull Sample sample) {
+    public void show(Sample originSample, List<Sample> compareSamples, int epsilon) {
+        this.originSample = originSample;
+        this.compareSamples = compareSamples;
+        this.epsilon = epsilon;
+        generate();
+    }
+
+    public void setEpsilon(int epsilon) {
+        if (this.epsilon == epsilon) {
+            return;
+        }
+
+        this.epsilon = epsilon;
+        generate();
+    }
+
+    public void generate() {
         long startTime = System.currentTimeMillis();
-        this.sample = sample;
 
-        SwingWorker<BufferedImage, Void> worker = new SwingWorker<>() {
+        Matrix matrix = Matrix.average(compareSamples.stream().map(Sample::getMatrix).toList());
+        matrix.apply((x, y, value) -> {
+            assert originSample.getMatrix() != null;
 
-            @Override
-            protected BufferedImage doInBackground() {
-                return DataHandler.loadImage(sample, CELL_WIDTH, CELL_HEIGHT, this::setProgress);
+            float originValue = originSample.getMatrix().getValue(x, y);
+            float val = Math.abs(originValue - value);
+            float eps = epsilon / 100.f;
+
+            if (val < eps) {
+                return 0.0f;
             }
-        };
 
-        log.info("Loading image for scan: {}", sample.getName());
+            return val;
+        });
+
+        int amountAboveEps = matrix.getData().stream().mapToInt(value -> value > 0.0f ? 1 : 0).sum();
+        analyzer.getStatisticsTable().setValue("Amount above epsilon", amountAboveEps);
+
+        float percentage = (float) Math.round((100 - (amountAboveEps / (float) matrix.size()) * 100) * 100) / 100;
+        analyzer.getStatisticsTable().setValue("Coverage (%)", percentage);
+
+        ImageMatrixLoadWorker worker = new ImageMatrixLoadWorker(matrix, CELL_WIDTH, CELL_HEIGHT);
         worker.execute();
 
         new ProgressiveDialog<BufferedImage>(
             analyzer.getViewer(),
-            "Caching scan: " + sample.getName(),
-            "Caching scan data, please wait..."
+            "Generating scan",
+            "Generating scan data, please wait..."
         ).open(worker);
 
         try {
             cachedImage = worker.get();
-
-            log.info("Finished caching scan in {}ms", System.currentTimeMillis() - startTime);
-        } catch (CancellationException ignored) {
-            log.warn("Loading of scan data was cancelled");
-        } catch (ExecutionException | InterruptedException e) {
-            log.error("Failed to load scan data: {}", e.getMessage());
+            log.info("Finished generating scan in {}ms", System.currentTimeMillis() - startTime);
+        } catch (Exception e) {
+            log.error("Failed to generate scan: {}", e.getMessage());
         }
 
         setGrabbable(true);

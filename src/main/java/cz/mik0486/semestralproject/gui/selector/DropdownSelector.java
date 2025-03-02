@@ -1,6 +1,5 @@
-package cz.mik0486.semestralproject.gui;
+package cz.mik0486.semestralproject.gui.selector;
 
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
@@ -9,19 +8,12 @@ import java.awt.*;
 import java.util.List;
 import java.util.function.Consumer;
 
-@Getter
+@Setter
 public class DropdownSelector<T> {
-
-    private final JPanel dropdown = new JPanel();
     private final JComboBox<T> comboBox;
-
-    @Setter
     private Consumer<T> onSelected;
 
     public DropdownSelector() {
-        dropdown.setLayout(new BorderLayout());
-        dropdown.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
         comboBox = new JComboBox<>();
         comboBox.addItem(null);
         comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, comboBox.getPreferredSize().height));
@@ -87,6 +79,14 @@ public class DropdownSelector<T> {
 
     @SuppressWarnings("unchecked")
     public T getSelected() {
+        if (comboBox.getItemCount() == 0) {
+            return null;
+        }
+
         return (T) comboBox.getSelectedItem();
+    }
+
+    public boolean hasSelected() {
+        return getSelected() != null;
     }
 }

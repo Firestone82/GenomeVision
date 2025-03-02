@@ -23,7 +23,7 @@ public class OpenFileMenuItem extends JMenuItem implements ActionListener {
 
         // Set the default directory to the resources/data directory.
         File currentDir = new File(System.getProperty("user.dir"));
-        File resourceDir = new File(currentDir, "src/main/resources/data");
+        File resourceDir = new File(currentDir, "data");
 
         if (resourceDir.exists()) {
             fileChooser.setCurrentDirectory(resourceDir);
@@ -35,7 +35,7 @@ public class OpenFileMenuItem extends JMenuItem implements ActionListener {
         fileChooser.setFileFilter(filter);
 
         switch (fileChooser.showOpenDialog(viewer)) {
-            case JFileChooser.APPROVE_OPTION -> viewer.openFile(fileChooser.getSelectedFile());
+            case JFileChooser.APPROVE_OPTION -> viewer.getAnalyzer().loadFile(fileChooser.getSelectedFile());
             case JFileChooser.CANCEL_OPTION -> System.out.println("Open command cancelled by user.");
             case JFileChooser.ERROR_OPTION -> System.err.println("Error occurred while opening file.");
         }

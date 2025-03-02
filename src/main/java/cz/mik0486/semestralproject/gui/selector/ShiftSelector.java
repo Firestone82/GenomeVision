@@ -1,21 +1,16 @@
-package cz.mik0486.semestralproject.gui;
+package cz.mik0486.semestralproject.gui.selector;
 
 import cz.mik0486.semestralproject.utils.log.Debouncer;
-import lombok.Getter;
 import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
 
-@Getter
+@Setter
 public class ShiftSelector {
-
-    private final JPanel shifter = new JPanel();
     private final JSlider slider;
     private final JTextField valueField;
-
-    @Setter
     private Consumer<Integer> onShifted;
 
     public ShiftSelector(int min, int max, int value) {
@@ -30,7 +25,6 @@ public class ShiftSelector {
             if (onShifted == null) {
                 return;
             }
-
             onShifted.accept(val);
         });
 
@@ -38,16 +32,16 @@ public class ShiftSelector {
             int val = slider.getValue();
             valueField.setText(String.valueOf(val));
 
-            debouncer.call(val);
+            if (!slider.getValueIsAdjusting()) {
+                debouncer.call(val);
+            }
         });
 
         valueField.addActionListener(e -> {
             try {
                 int input = Integer.parseInt(valueField.getText());
-
                 int val = Math.max(slider.getMinimum(), Math.min(slider.getMaximum(), input));
                 slider.setValue(val);
-
                 debouncer.call(val);
             } catch (NumberFormatException ex) {
                 valueField.setText(String.valueOf(slider.getValue()));
@@ -66,5 +60,9 @@ public class ShiftSelector {
         jPanel.add(valueField);
 
         return jPanel;
+    }
+
+    public int getValue() {
+        return slider.getValue();
     }
 }

@@ -24,10 +24,10 @@ public class MatrixTest {
 
     @Test
     void create() {
-        Matrix<Double> matrix = new Matrix<>(2, 3, 0.0);
+        Matrix matrix = new Matrix(2, 3, 0.0f);
         matrix.setData(new Vector<>(List.of(
-            1.0, 2.0, 3.0,
-            4.0, 5.0
+            1.0f, 2.0f, 3.0f,
+            4.0f, 5.0f
         )));
 
         assertEquals(2, matrix.getRows());

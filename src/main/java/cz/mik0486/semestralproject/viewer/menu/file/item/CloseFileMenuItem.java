@@ -17,6 +17,6 @@ public class CloseFileMenuItem extends JMenuItem implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        fileMenu.getViewer().closeFile();
+        fileMenu.getViewer().getAnalyzer().closeFile();
     }
 }

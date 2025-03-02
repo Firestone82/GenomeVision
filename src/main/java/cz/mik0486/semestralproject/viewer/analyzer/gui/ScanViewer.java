@@ -37,6 +37,8 @@ public class ScanViewer extends ZoomableGrabbablePane {
         if (cachedImage != null) {
             g2.drawImage(cachedImage, 0, 0, null);
         } else {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
             g2.setColor(Color.DARK_GRAY);
             g2.setFont(new Font("Arial", Font.BOLD, 18));
             g2.drawString("No sample loaded", 20, 40);
@@ -51,15 +53,14 @@ public class ScanViewer extends ZoomableGrabbablePane {
     }
 
     public void setEpsilon(int epsilon) {
-        if (this.epsilon == epsilon) {
-            return;
-        }
-
         this.epsilon = epsilon;
-        generate();
+
+        if (this.originSample != null) {
+            generate();
+        }
     }
 
-    public void generate() {
+    private void generate() {
         long startTime = System.currentTimeMillis();
 
         Matrix matrix = Matrix.average(compareSamples.stream()
@@ -111,6 +112,8 @@ public class ScanViewer extends ZoomableGrabbablePane {
 
     public void closeSample() {
         cachedImage = null;
+        originSample = null;
+        compareSamples = null;
 
         setGrabbable(false);
         setZoomable(false);

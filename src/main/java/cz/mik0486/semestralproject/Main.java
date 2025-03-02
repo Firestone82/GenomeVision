@@ -1,11 +1,11 @@
 package cz.mik0486.semestralproject;
 
 import cz.mik0486.semestralproject.viewer.Viewer;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 
-@Log4j2
+@Slf4j
 public class Main {
 
     public static void main(String[] args) {

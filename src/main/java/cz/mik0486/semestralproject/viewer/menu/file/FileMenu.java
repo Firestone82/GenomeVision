@@ -15,12 +15,12 @@ public class FileMenu extends JMenu {
         this.viewer = viewer;
 
         add(new OpenFileMenuItem(viewer));
-        add(new CloseFileMenuItem(this));
+        add(new CloseFileMenuItem(viewer));
         addSeparator();
-        add(new SettingsMenuItem(this));
+        add(new SettingsMenuItem(viewer));
         addSeparator();
-        add(new ExportMenuItem(this));
+        add(new ExportMenuItem(viewer));
         addSeparator();
-        add(new ExitMenuItem(this));
+        add(new ExitMenuItem(viewer));
     }
 }

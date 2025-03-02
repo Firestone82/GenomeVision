@@ -14,6 +14,6 @@ public class HelpMenu extends JMenu {
         super("Help");
         this.viewer = viewer;
 
-        add(new AboutMenuItem(this));
+        add(new AboutMenuItem(viewer));
     }
 }

@@ -115,7 +115,7 @@ public class Analyzer {
         JPanel centerContainer = new JPanel();
         centerContainer.setLayout(new BoxLayout(centerContainer, BoxLayout.Y_AXIS));
 
-        JScrollPane checklistPanel = scanCompareSelector.initUI("Compare with:");
+        JPanel checklistPanel = scanCompareSelector.initUI("Compare with:");
         centerContainer.add(checklistPanel);
 
         rightPanel.add(centerContainer, BorderLayout.CENTER);

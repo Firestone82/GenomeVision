@@ -25,6 +25,17 @@ public class Matrix {
         this.data.addAll(Collections.nCopies(rows * columns, defaultValue));
     }
 
+    public Matrix(int rows, int columns, float defaultValue, MatrixElementFunction func) {
+        this.rows = rows;
+        this.columns = columns;
+        this.defaultValue = defaultValue;
+
+        this.data = new ArrayList<>(rows * columns);
+        this.data.addAll(Collections.nCopies(rows * columns, defaultValue));
+
+        apply(func);
+    }
+
     public void setData(Vector<Float> data) {
         this.data.clear();
         this.data.addAll(data);
@@ -116,6 +127,37 @@ public class Matrix {
         }
 
         return result;
+    }
+
+    public static Matrix closestToAverage(List<Matrix> matrices) {
+        Matrix bestMatrix = null;
+        Matrix avgMatrix = Matrix.average(matrices);
+        double bestDiff = Double.MAX_VALUE;
+
+        for (Matrix matrix : matrices) {
+            double diff = matrixDifference(matrix, avgMatrix);
+
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                bestMatrix = matrix;
+            }
+        }
+
+        return bestMatrix;
+    }
+
+    private static double matrixDifference(Matrix m1, Matrix m2) {
+        double sum = 0.0;
+        int rows = m1.getRows();
+        int cols = m1.getColumns();
+
+        for (int x = 0; x < rows; x++) {
+            for (int y = 0; y < cols; y++) {
+                sum += Math.abs(m1.getValue(x, y) - m2.getValue(x, y));
+            }
+        }
+
+        return sum;
     }
 
     @FunctionalInterface

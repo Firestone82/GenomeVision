@@ -1,13 +1,17 @@
 package cz.mik0486.semestralproject.viewer.analyzer;
 
 import cz.mik0486.semestralproject.data.holder.Sample;
-import cz.mik0486.semestralproject.gui.BasicTable;
 import cz.mik0486.semestralproject.gui.ProgressiveDialog;
+import cz.mik0486.semestralproject.gui.Table;
+import cz.mik0486.semestralproject.gui.panel.GridPanel;
 import cz.mik0486.semestralproject.gui.selector.ChecklistSelector;
 import cz.mik0486.semestralproject.gui.selector.DropdownSelector;
-import cz.mik0486.semestralproject.gui.selector.ShiftSelector;
+import cz.mik0486.semestralproject.gui.selector.ShiftRangeSelector;
 import cz.mik0486.semestralproject.viewer.Viewer;
 import cz.mik0486.semestralproject.viewer.analyzer.gui.ScanViewer;
+import cz.mik0486.semestralproject.viewer.analyzer.method.AverageFilterMethod;
+import cz.mik0486.semestralproject.viewer.analyzer.method.CloseAverageFilterMethod;
+import cz.mik0486.semestralproject.viewer.analyzer.method.FilterMethod;
 import cz.mik0486.semestralproject.viewer.analyzer.worker.FileLoadWorker;
 import cz.mik0486.semestralproject.viewer.analyzer.worker.SamplesLoadWorker;
 import lombok.Getter;
@@ -31,36 +35,54 @@ public class Analyzer {
     private File file;
 
     // Panel components
-    private final BasicTable statisticsTable = new BasicTable();
-    private final ScanViewer scanViewer = new ScanViewer(this);
-    private final ShiftSelector shifterSelector = new ShiftSelector(0, 100, 50);
-    private final DropdownSelector<Sample> scanViewSelector = new DropdownSelector<>();
-    private final ChecklistSelector<Sample> scanCompareSelector = new ChecklistSelector<>();
+    private final Table statisticsTable = new Table();
+    private final ShiftRangeSelector shifterSelector = new ShiftRangeSelector(0, 100, 25, 75);
+    private final ScanViewer scanViewer = new ScanViewer(this, shifterSelector.getValue());
+    private final DropdownSelector<FilterMethod> filterMethodSelector = new DropdownSelector<>();
+    private final ChecklistSelector<Sample> scanOriginSelector = new ChecklistSelector<>();
+    private final ChecklistSelector<Sample> scanTargetSelector = new ChecklistSelector<>();
     private final JButton analyzeButton = new JButton("Analyze");
 
     public Analyzer(Viewer viewer) {
         this.viewer = viewer;
 
         shifterSelector.setOnShifted(scanViewer::setEpsilon);
-        scanViewSelector.setOnSelected(scanCompareSelector::hideItem);
+
+        scanOriginSelector.setOnSelected(samples -> {
+            scanViewer.setOriginSamples(samples);
+            scanTargetSelector.hideItems(samples);
+        });
+
+        scanTargetSelector.setOnSelected(samples -> {
+            scanViewer.setTargetSamples(samples);
+            scanOriginSelector.hideItems(samples);
+        });
 
         analyzeButton.addActionListener(e -> {
-            if (!scanViewSelector.hasSelected()) {
-                JOptionPane.showMessageDialog(
-                    viewer,
-                    "Please select a sample to analyze.",
-                    "No sample selected",
+            if (file == null) {
+                JOptionPane.showMessageDialog(viewer,
+                    "Please load a CSV file to analyze.",
+                    "No file loaded",
                     JOptionPane.WARNING_MESSAGE
                 );
 
                 return;
             }
 
-            if (!scanCompareSelector.hasSelected()) {
-                JOptionPane.showMessageDialog(
-                    viewer,
-                    "Please select at least one sample to compare with.",
-                    "No samples selected",
+            if (!filterMethodSelector.hasSelected()) {
+                JOptionPane.showMessageDialog(viewer,
+                    "Please select a filter method to use.",
+                    "No filter method selected",
+                    JOptionPane.WARNING_MESSAGE
+                );
+
+                return;
+            }
+
+            if (!scanOriginSelector.hasSelected() || !scanTargetSelector.hasSelected()) {
+                JOptionPane.showMessageDialog(viewer,
+                    "Please select at least one sample to analyze.",
+                    "No sample selected",
                     JOptionPane.WARNING_MESSAGE
                 );
 
@@ -72,60 +94,66 @@ public class Analyzer {
 
         statisticsTable.setValue("Amount above epsilon", "N/A");
         statisticsTable.setValue("Coverage (%)", "N/A");
+
+        filterMethodSelector.add(new AverageFilterMethod());
+        filterMethodSelector.add(new CloseAverageFilterMethod());
     }
 
     public void initUI(JFrame frame) {
-        JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 0));
-
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(leftPanel, BorderLayout.CENTER);
-        mainPanel.add(rightPanel, BorderLayout.EAST);
 
         /*
          * LEFT PANEL
          */
 
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 5));
+        mainPanel.add(leftPanel, BorderLayout.CENTER);
+
+        // Scan viewer
         leftPanel.add(scanViewer.getPanel(), BorderLayout.CENTER);
 
         /*
          * RIGHT PANEL
          */
 
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 10));
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+
+        // Top
         JPanel upperPanel = new JPanel();
         upperPanel.setLayout(new BoxLayout(upperPanel, BoxLayout.Y_AXIS));
         upperPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         rightPanel.add(upperPanel, BorderLayout.NORTH);
 
-        JPanel shifterPanel = shifterSelector.initUI("Epsilon:");
-        upperPanel.add(shifterPanel);
+        GridPanel gridPanel = new GridPanel(5, 5, BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(" Settings: "),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        gridPanel.add(new JLabel("Method:"), filterMethodSelector.getComponent());
+        gridPanel.add(new JLabel("Epsilon:"), shifterSelector.getComponent(true));
+        upperPanel.add(gridPanel.getPanel());
+
         upperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        upperPanel.add(statisticsTable.initUI("Statistics"));
 
-        JPanel statsScrollPane = statisticsTable.initUI("Statistics");
-        upperPanel.add(statsScrollPane);
+        // Mid
+        JPanel middlePanel = new JPanel();
+        middlePanel.setLayout(new BoxLayout(middlePanel, BoxLayout.Y_AXIS));
+        rightPanel.add(middlePanel, BorderLayout.CENTER);
 
-        upperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        middlePanel.add(scanOriginSelector.initUI("Select sample:"));
+        middlePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        middlePanel.add(scanTargetSelector.initUI("Compare with:"));
 
-        JPanel dropdownPanel = scanViewSelector.initUI("Select sample:");
-        upperPanel.add(dropdownPanel);
-
-        JPanel centerContainer = new JPanel();
-        centerContainer.setLayout(new BoxLayout(centerContainer, BoxLayout.Y_AXIS));
-
-        JPanel checklistPanel = scanCompareSelector.initUI("Compare with:");
-        centerContainer.add(checklistPanel);
-
-        rightPanel.add(centerContainer, BorderLayout.CENTER);
-
-        analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
-
+        // Bottom
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        bottomPanel.add(analyzeButton, BorderLayout.CENTER);
         rightPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
+        bottomPanel.add(analyzeButton, BorderLayout.CENTER);
 
         frame.add(mainPanel);
     }
@@ -151,8 +179,8 @@ public class Analyzer {
             this.samples.addAll(samples);
 
             statisticsTable.clear(false);
-            scanViewSelector.setItems(samples);
-            scanCompareSelector.setItems(samples);
+            scanOriginSelector.setItems(samples);
+            scanTargetSelector.setItems(samples);
 
             log.info("Finished loading CSV file in {}ms. Found total {} samples", System.currentTimeMillis() - startTime, samples.size());
         } catch (CancellationException ignored) {
@@ -165,19 +193,19 @@ public class Analyzer {
     public void closeFile() {
         statisticsTable.clear(false);
         scanViewer.closeSample();
-        scanViewSelector.clearItems();
-        scanCompareSelector.clearItems();
+        scanOriginSelector.clearItems();
+        scanTargetSelector.clearItems();
     }
 
     public void analyzeSamples() {
         log.info("Analyzing samples: {} with {}",
-            scanViewSelector.getSelected().getName(),
-            scanCompareSelector.getSelected().stream().map(Sample::getName).toList()
+            scanOriginSelector.getSelected().stream().map(Sample::getName).toList(),
+            scanTargetSelector.getSelected().stream().map(Sample::getName).toList()
         );
 
         List<Sample> samplesToLoad = new ArrayList<>();
-        samplesToLoad.add(scanViewSelector.getSelected());
-        samplesToLoad.addAll(scanCompareSelector.getSelected());
+        samplesToLoad.addAll(scanOriginSelector.getSelected());
+        samplesToLoad.addAll(scanTargetSelector.getSelected());
 
         // Unload the samples that are not needed
         samples.stream()
@@ -199,7 +227,7 @@ public class Analyzer {
 
         if (samplesToLoad.isEmpty()) {
             log.info("All samples are already loaded, skipping the loading process.");
-            scanViewer.show(scanViewSelector.getSelected(), scanCompareSelector.getSelected(), shifterSelector.getValue());
+            scanViewer.generate();
         } else {
             long startTime = System.currentTimeMillis();
             log.info(" - Found samples to load: {}", samplesToLoad.stream().map(Sample::getName).toList());
@@ -216,8 +244,7 @@ public class Analyzer {
             try {
                 List<Sample> loadedSamples = worker.get();
                 log.info("Finished loading samples in {}ms", System.currentTimeMillis() - startTime);
-
-                scanViewer.show(scanViewSelector.getSelected(), scanCompareSelector.getSelected(), shifterSelector.getValue());
+                scanViewer.generate();
             } catch (CancellationException ignored) {
                 log.warn("Loading the samples was cancelled by the user.");
             } catch (ExecutionException | InterruptedException e) {

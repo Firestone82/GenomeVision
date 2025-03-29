@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 
-public class BasicTable {
+public class Table {
 
     private final JPanel labelColumn = new JPanel();
     private final JPanel valueColumn = new JPanel();

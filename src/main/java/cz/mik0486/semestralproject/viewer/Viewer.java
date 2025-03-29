@@ -27,9 +27,13 @@ public class Viewer extends JFrame {
         FlatLightLaf.setup();
         log.info("Setting up FlatLightLaf look and feel");
 
+        // Get monitor max resolution
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        log.info("Screen resolution: {}x{}", screenSize.width, screenSize.height);
+
         // Set up window
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600);
+        setSize(screenSize.width / 2, (int) (screenSize.height / 1.5));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         setJMenuBar(new Menu(this));
@@ -45,6 +49,9 @@ public class Viewer extends JFrame {
         // Initialize scan selector
         this.analyzer = new Analyzer(this);
         this.analyzer.initUI(this);
+
+        // Load file
+        analyzer.loadFile(new File("src/main/resources/data/aml_ratios_trans_small.csv"));
 
         // Call exit method when window is closed
         addWindowListener(new WindowAdapter() {

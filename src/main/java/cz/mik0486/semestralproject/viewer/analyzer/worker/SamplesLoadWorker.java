@@ -23,10 +23,10 @@ public class SamplesLoadWorker extends SwingWorker<List<Sample>, Void> {
     protected List<Sample> doInBackground() throws Exception {
         int percentPerSample = 100 / samplesToLoad.size();
         int currentPercent = 0;
+        int loaded = 0;
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            // First line is the header
-            String line = reader.readLine();
+            String line = reader.readLine(); // First line is the header
 
             if (line == null) {
                 throw new ScanLoadException("Provided file is empty");
@@ -52,9 +52,14 @@ public class SamplesLoadWorker extends SwingWorker<List<Sample>, Void> {
                     sample.setMatrix(matrix);
 
                     currentPercent += percentPerSample;
-                    setProgress(Math.max(0, Math.min(100, currentPercent)));
+                    setProgress(Math.min(100, currentPercent));
 
                     log.trace("Successfully loaded sample: {}", sample.getName());
+                    loaded += 1;
+                }
+
+                if (loaded == samplesToLoad.size()) {
+                    break;
                 }
 
                 if (currentPercent >= 100) {

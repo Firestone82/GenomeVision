@@ -3,6 +3,7 @@ package cz.mik0486.semestralproject.gui.selector;
 import cz.mik0486.semestralproject.utils.Debouncer;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -11,16 +12,20 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Setter
 public class ChecklistSelector<T> {
 
     private final JPanel column1 = new JPanel();
     private final JPanel column2 = new JPanel();
 
-    private final JTextField filter = new JTextField(20);
+    private final JTextField filter = new JTextField();
     private final HashMap<JCheckBox, T> checkboxes = new HashMap<>();
+    private final List<JCheckBox> hiddenCheckBoxes = new ArrayList<>();
     private Consumer<List<T>> onSelected;
 
     public ChecklistSelector() {
@@ -45,19 +50,19 @@ public class ChecklistSelector<T> {
     }
 
     public JPanel initUI(String title) {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createTitledBorder(" " + title.trim() + " "));
+        JPanel component = new JPanel(new BorderLayout());
+        component.setBorder(BorderFactory.createTitledBorder(" " + title.trim() + " "));
 
         // Filter panel
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel filterPanel = new JPanel(new BorderLayout(5, 5));
         filterPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
-        filterPanel.add(new JLabel("Filter:"));
-        filterPanel.add(filter);
+        filterPanel.add(new JLabel("Filter:"), BorderLayout.WEST);
+        filterPanel.add(filter, BorderLayout.CENTER);
 
         // Top panel
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-        mainPanel.add(topPanel, BorderLayout.NORTH);
+        component.add(topPanel, BorderLayout.NORTH);
 
         topPanel.add(filterPanel);
         topPanel.add(Box.createVerticalStrut(4));
@@ -70,7 +75,7 @@ public class ChecklistSelector<T> {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        component.add(scrollPane, BorderLayout.CENTER);
 
         column1.setLayout(new BoxLayout(column1, BoxLayout.Y_AXIS));
         column1.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -80,18 +85,26 @@ public class ChecklistSelector<T> {
         column2.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         listPanel.add(column2);
 
-        return mainPanel;
+        return component;
     }
 
-    public void hideItem(T item) {
-        for (JCheckBox checkbox : checkboxes.keySet()) {
-            if (checkbox.getText().equals(item.toString())) {
-                checkbox.setVisible(false);
+    public void hideItems(List<T> items) {
+        Set<String> hideSet = items.stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet());
+
+        hiddenCheckBoxes.clear();
+
+        checkboxes.keySet().forEach(checkbox -> {
+            boolean shouldHide = hideSet.contains(checkbox.getText());
+            checkbox.setVisible(!shouldHide);
+
+            if (shouldHide) {
                 checkbox.setSelected(false);
-            } else {
-                checkbox.setVisible(true);
+                hiddenCheckBoxes.add(checkbox);
             }
-        }
+        });
+
         applyFilter();
     }
 
@@ -146,6 +159,11 @@ public class ChecklistSelector<T> {
 
         for (JCheckBox checkbox : checkboxes.keySet()) {
             String text = checkbox.getText().toLowerCase();
+
+            if (hiddenCheckBoxes.contains(checkbox)) {
+                continue;
+            }
+
             if (text.contains(filterText) || checkbox.isSelected()) {
                 checkbox.setVisible(true);
                 filteredCheckboxes.add(checkbox);

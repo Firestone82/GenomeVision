@@ -10,11 +10,10 @@ import java.util.function.Consumer;
 
 @Setter
 public class DropdownSelector<T> {
-    private final JComboBox<T> comboBox;
+    private final JComboBox<T> comboBox = new JComboBox<>();
     private Consumer<T> onSelected;
 
     public DropdownSelector() {
-        comboBox = new JComboBox<>();
         comboBox.addItem(null);
         comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, comboBox.getPreferredSize().height));
 
@@ -50,17 +49,12 @@ public class DropdownSelector<T> {
         });
     }
 
-    public JPanel initUI(String label) {
-        JPanel jPanel = new JPanel();
-        jPanel.setLayout(new BorderLayout());
+    public Component getComponent() {
+        return comboBox;
+    }
 
-        JLabel jLabel = new JLabel(label);
-        jLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
-        jPanel.add(jLabel, BorderLayout.WEST);
-
-        jPanel.add(comboBox, BorderLayout.CENTER);
-
-        return jPanel;
+    public void add(T item) {
+        comboBox.addItem(item);
     }
 
     public void setItems(@NonNull List<T> items) {

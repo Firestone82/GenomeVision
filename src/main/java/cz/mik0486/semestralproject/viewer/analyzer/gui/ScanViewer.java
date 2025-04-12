@@ -1,39 +1,29 @@
 package cz.mik0486.semestralproject.viewer.analyzer.gui;
 
 import cz.mik0486.semestralproject.data.holder.Matrix;
-import cz.mik0486.semestralproject.data.holder.Sample;
 import cz.mik0486.semestralproject.gui.ProgressiveDialog;
-import cz.mik0486.semestralproject.gui.ZoomableGrabbablePane;
-import cz.mik0486.semestralproject.gui.selector.range.Range;
+import cz.mik0486.semestralproject.gui.panel.ZoomableGrabbablePanel;
 import cz.mik0486.semestralproject.utils.MathUtils;
 import cz.mik0486.semestralproject.viewer.analyzer.Analyzer;
 import cz.mik0486.semestralproject.viewer.analyzer.worker.ImageMatrixLoadWorker;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Getter
-public class ScanViewer extends ZoomableGrabbablePane {
+public class ScanViewer extends ZoomableGrabbablePanel {
     private final Analyzer analyzer;
 
     private BufferedImage cachedImage;
     private static final int CELL_WIDTH = 2;
     private static final int CELL_HEIGHT = 2;
 
-    @Setter private List<Sample> originSamples = new ArrayList<>();
-    @Setter private List<Sample> targetSamples = new ArrayList<>();
-    private Range epsilon;
-
-    public ScanViewer(Analyzer analyzer, Range initEpsilon) {
+    public ScanViewer(Analyzer analyzer) {
         super(false, false, false);
         this.analyzer = analyzer;
-        this.epsilon = initEpsilon;
     }
 
     @Override
@@ -49,18 +39,20 @@ public class ScanViewer extends ZoomableGrabbablePane {
         }
     }
 
-    public void setEpsilon(Range epsilon) {
-        this.epsilon = epsilon;
-
+    public void regenerate() {
         if (cachedImage != null) {
-            generate();
+            show();
         }
     }
 
-    public void generate() {
+    public void show() {
         long startTime = System.currentTimeMillis();
 
-        Matrix matrix = analyzer.getFilterMethodSelector().getSelected().process(this);
+        Matrix matrix = analyzer.getFilterMethodSelector().getSelected().calculate(
+            analyzer.getCompareOriginScanSelector().getSelected(),
+            analyzer.getCompareTargetScanSelector().getSelected(),
+            analyzer.getEpsilonShifterSelector().getValue()
+        );
 
         int amountAboveEps = matrix.getData().stream().mapToInt(value -> value > 0.0f ? 1 : 0).sum();
         analyzer.getStatisticsTable().setValue("Amount above epsilon", amountAboveEps);
@@ -92,9 +84,6 @@ public class ScanViewer extends ZoomableGrabbablePane {
 
     public void closeSample() {
         cachedImage = null;
-        originSamples = null;
-        targetSamples = null;
-
         setGrabbable(false);
         setZoomable(false);
 

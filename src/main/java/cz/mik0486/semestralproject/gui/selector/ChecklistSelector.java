@@ -23,13 +23,13 @@ public class ChecklistSelector<T> {
     private final JPanel column1 = new JPanel();
     private final JPanel column2 = new JPanel();
 
-    private final JTextField filter = new JTextField();
+    private final JTextField filterField = new JTextField();
     private final HashMap<JCheckBox, T> checkboxes = new HashMap<>();
     private final List<JCheckBox> hiddenCheckBoxes = new ArrayList<>();
     private Consumer<List<T>> onSelected;
 
     public ChecklistSelector() {
-        filter.getDocument().addDocumentListener(new DocumentListener() {
+        filterField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 applyFilter();
@@ -49,24 +49,26 @@ public class ChecklistSelector<T> {
         applyFilter();
     }
 
-    public JPanel initUI(String title) {
-        JPanel component = new JPanel(new BorderLayout());
-        component.setBorder(BorderFactory.createTitledBorder(" " + title.trim() + " "));
+    public JPanel getComponent(boolean filter) {
+        JPanel component = new JPanel();
+        component.setLayout(new BorderLayout(5, 5));
 
         // Filter panel
         JPanel filterPanel = new JPanel(new BorderLayout(5, 5));
         filterPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
         filterPanel.add(new JLabel("Filter:"), BorderLayout.WEST);
-        filterPanel.add(filter, BorderLayout.CENTER);
+        filterPanel.add(filterField, BorderLayout.CENTER);
 
         // Top panel
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
         component.add(topPanel, BorderLayout.NORTH);
 
-        topPanel.add(filterPanel);
-        topPanel.add(Box.createVerticalStrut(4));
-        topPanel.add(new JSeparator(SwingConstants.HORIZONTAL));
+        if (filter) {
+            topPanel.add(filterPanel);
+            topPanel.add(Box.createVerticalStrut(4));
+            topPanel.add(new JSeparator(SwingConstants.HORIZONTAL));
+        }
 
         // List panel
         JPanel listPanel = new JPanel(new GridLayout(1, 2, 10, 10));
@@ -154,7 +156,7 @@ public class ChecklistSelector<T> {
      * When no items are available (either nothing loaded or no matching items), a placeholder is shown at the top.
      */
     private void applyFilter() {
-        String filterText = filter.getText().trim().toLowerCase();
+        String filterText = filterField.getText().trim().toLowerCase();
         List<JCheckBox> filteredCheckboxes = new ArrayList<>();
 
         for (JCheckBox checkbox : checkboxes.keySet()) {

@@ -11,19 +11,20 @@ public class Table {
 
     private final HashMap<String, JLabel> rows = new HashMap<>();
 
-    public JPanel initUI(String title) {
+    public JPanel getPanel() {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.X_AXIS));
-        mainPanel.setBorder(BorderFactory.createTitledBorder(" " + title.trim() + " "));
 
         labelColumn.setLayout(new BoxLayout(labelColumn, BoxLayout.Y_AXIS));
-        labelColumn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        mainPanel.add(labelColumn);
-        mainPanel.add(Box.createHorizontalStrut(5));  // spacing between columns
+        labelColumn.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+        labelColumn.setPreferredSize(new Dimension(0, labelColumn.getPreferredSize().height));
 
         valueColumn.setLayout(new BoxLayout(valueColumn, BoxLayout.Y_AXIS));
-        valueColumn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        valueColumn.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
         valueColumn.setPreferredSize(new Dimension(0, valueColumn.getPreferredSize().height));
+
+        mainPanel.add(labelColumn);
+        mainPanel.add(Box.createHorizontalStrut(5));
         mainPanel.add(valueColumn);
 
         Dimension pref = mainPanel.getPreferredSize();

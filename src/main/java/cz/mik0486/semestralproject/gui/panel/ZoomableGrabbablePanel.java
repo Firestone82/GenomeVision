@@ -1,4 +1,4 @@
-package cz.mik0486.semestralproject.gui;
+package cz.mik0486.semestralproject.gui.panel;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,7 +14,7 @@ import java.awt.geom.AffineTransform;
 
 @Slf4j
 @Getter
-public abstract class ZoomableGrabbablePane {
+public abstract class ZoomableGrabbablePanel {
     protected final JPanel panel;
 
     @Setter
@@ -33,7 +33,7 @@ public abstract class ZoomableGrabbablePane {
     @Getter(AccessLevel.NONE)
     private Point lastMousePoint;
 
-    public ZoomableGrabbablePane(boolean grabbable, boolean zoomable, boolean transparent) {
+    public ZoomableGrabbablePanel(boolean grabbable, boolean zoomable, boolean transparent) {
         this.grabbable = grabbable;
         this.zoomable = zoomable;
         this.transparent = transparent;
@@ -56,7 +56,7 @@ public abstract class ZoomableGrabbablePane {
                 g2.scale(scale, scale);
 
                 // Paint the content
-                ZoomableGrabbablePane.this.paint(g2);
+                ZoomableGrabbablePanel.this.paint(g2);
 
                 // Restore original transform
                 g2.setTransform(originalTransform);

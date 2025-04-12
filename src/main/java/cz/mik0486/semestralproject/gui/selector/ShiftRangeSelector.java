@@ -7,6 +7,7 @@ import cz.mik0486.semestralproject.utils.Debouncer;
 import lombok.Setter;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -87,11 +88,14 @@ public class ShiftRangeSelector {
         JPanel component = new JPanel();
         component.setLayout(new BoxLayout(component, horizontal ? BoxLayout.X_AXIS : BoxLayout.Y_AXIS));
 
+        // Compoenent should be only as tall as it needs to be, do not scale
+        component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getPreferredSize().height));
+
         GridPanel gridPanel = new GridPanel(2, 5, BorderFactory.createEmptyBorder());
 
         if (horizontal) {
-            gridPanel.add(new JLabel("Max: "), lowerValueField);
-            gridPanel.add(new JLabel("Min: "), upperValueField);
+            gridPanel.add(new JLabel("Min: "), lowerValueField);
+            gridPanel.add(new JLabel("Max: "), upperValueField);
         } else {
             JPanel minPanel = new JPanel();
             minPanel.setLayout(new BoxLayout(minPanel, BoxLayout.X_AXIS));

@@ -27,7 +27,6 @@ public class ProgressiveDialog<T> extends JDialog {
 
     public void open(SwingWorker<T, Void> worker) {
         this.worker = worker;
-
         this.worker.addPropertyChangeListener(evt -> {
             if ("progress".equals(evt.getPropertyName())) {
                 int progress = (Integer) evt.getNewValue();
@@ -55,9 +54,8 @@ public class ProgressiveDialog<T> extends JDialog {
         panel.add(label, BorderLayout.NORTH);
         panel.add(progressBar, BorderLayout.CENTER);
 
-
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.add(cancelButton);
         panel.add(buttonPanel, BorderLayout.SOUTH);
+        buttonPanel.add(cancelButton);
     }
 }

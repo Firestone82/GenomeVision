@@ -63,17 +63,14 @@ public class ShiftSelector {
         valueField.addMouseWheelListener(listener);
     }
 
-    public JPanel initUI(String label) {
-        JPanel jPanel = new JPanel();
-        jPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+    public JPanel getComponent() {
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
-        JLabel jLabel = new JLabel(label);
-        jPanel.add(jLabel, BorderLayout.WEST);
+        mainPanel.add(slider);
+        mainPanel.add(valueField);
 
-        jPanel.add(slider);
-        jPanel.add(valueField);
-
-        return jPanel;
+        return mainPanel;
     }
 
     public int getValue() {

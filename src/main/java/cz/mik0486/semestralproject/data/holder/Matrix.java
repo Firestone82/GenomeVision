@@ -10,7 +10,6 @@ import java.util.function.Function;
 
 @Data
 public class Matrix {
-
     private final int rows;
     private final int columns;
     private final float defaultValue;
@@ -101,63 +100,6 @@ public class Matrix {
         matrix.setData(data);
 
         return matrix;
-    }
-
-    public static Matrix average(List<Matrix> matrices) {
-        Matrix first = matrices.getFirst();
-
-        for (int i = 1; i < matrices.size(); i++) {
-            if (first.getRows() != matrices.get(i).getRows() || first.getColumns() != matrices.get(i).getColumns()) {
-                throw new IllegalArgumentException("Matrices must have the same dimensions!");
-            }
-        }
-
-        Matrix result = new Matrix(first.getRows(), first.getColumns(), first.getDefaultValue());
-
-        for (int i = 0; i < result.getRows(); i++) {
-            for (int j = 0; j < result.getColumns(); j++) {
-                float sum = 0;
-
-                for (Matrix matrix : matrices) {
-                    sum += matrix.getValue(i, j);
-                }
-
-                result.setValue(i, j, sum / matrices.size());
-            }
-        }
-
-        return result;
-    }
-
-    public static Matrix closestToAverage(List<Matrix> matrices) {
-        Matrix bestMatrix = null;
-        Matrix avgMatrix = Matrix.average(matrices);
-        double bestDiff = Double.MAX_VALUE;
-
-        for (Matrix matrix : matrices) {
-            double diff = matrixDifference(matrix, avgMatrix);
-
-            if (diff < bestDiff) {
-                bestDiff = diff;
-                bestMatrix = matrix;
-            }
-        }
-
-        return bestMatrix;
-    }
-
-    private static double matrixDifference(Matrix m1, Matrix m2) {
-        double sum = 0.0;
-        int rows = m1.getRows();
-        int cols = m1.getColumns();
-
-        for (int x = 0; x < rows; x++) {
-            for (int y = 0; y < cols; y++) {
-                sum += Math.abs(m1.getValue(x, y) - m2.getValue(x, y));
-            }
-        }
-
-        return sum;
     }
 
     @FunctionalInterface

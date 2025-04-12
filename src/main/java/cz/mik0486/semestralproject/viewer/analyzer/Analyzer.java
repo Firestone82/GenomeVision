@@ -1,13 +1,17 @@
 package cz.mik0486.semestralproject.viewer.analyzer;
 
 import cz.mik0486.semestralproject.data.holder.Sample;
+import cz.mik0486.semestralproject.gui.LabelSeparator;
 import cz.mik0486.semestralproject.gui.ProgressiveDialog;
 import cz.mik0486.semestralproject.gui.Table;
 import cz.mik0486.semestralproject.gui.panel.GridPanel;
+import cz.mik0486.semestralproject.gui.panel.graph.HighlightRegion;
 import cz.mik0486.semestralproject.gui.selector.ChecklistSelector;
 import cz.mik0486.semestralproject.gui.selector.DropdownSelector;
 import cz.mik0486.semestralproject.gui.selector.ShiftRangeSelector;
+import cz.mik0486.semestralproject.gui.selector.ShiftSelector;
 import cz.mik0486.semestralproject.viewer.Viewer;
+import cz.mik0486.semestralproject.viewer.analyzer.gui.GraphViewer;
 import cz.mik0486.semestralproject.viewer.analyzer.gui.ScanViewer;
 import cz.mik0486.semestralproject.viewer.analyzer.method.AverageFilterMethod;
 import cz.mik0486.semestralproject.viewer.analyzer.method.CloseAverageFilterMethod;
@@ -29,131 +33,192 @@ import java.util.concurrent.ExecutionException;
 @Slf4j
 @Getter
 public class Analyzer {
-    private final Viewer viewer;
+    private static final int DEFAULT_EPSILON = 50;
 
+    private final Viewer viewer;
     private final List<Sample> samples = new ArrayList<>();
     private File file;
 
-    // Panel components
-    private final Table statisticsTable = new Table();
-    private final ShiftRangeSelector shifterSelector = new ShiftRangeSelector(0, 100, 25, 75);
-    private final ScanViewer scanViewer = new ScanViewer(this, shifterSelector.getValue());
-    private final DropdownSelector<FilterMethod> filterMethodSelector = new DropdownSelector<>();
-    private final ChecklistSelector<Sample> scanOriginSelector = new ChecklistSelector<>();
-    private final ChecklistSelector<Sample> scanTargetSelector = new ChecklistSelector<>();
-    private final JButton analyzeButton = new JButton("Analyze");
+    // Viewers
+    private final CardLayout cardLayout = new CardLayout();
+    private JPanel viewerPanel;
+    private final ScanViewer scanViewer;
+    private final GraphViewer graphViewer;
+
+    // Sidebar components
+    private final DropdownSelector<FilterMethod> filterMethodSelector;
+    private final ShiftSelector epsilonShifterSelector;
+    private final Table statisticsTable;
+    private final ChecklistSelector<Sample> compareOriginScanSelector;
+    private final ShiftRangeSelector compareOriginRangeSelector;
+    private final ChecklistSelector<Sample> compareTargetScanSelector;
+    private final ShiftRangeSelector compareTargetRangeSelector;
+    private final JButton analyzeButton;
+    private final JButton graphButton;
 
     public Analyzer(Viewer viewer) {
         this.viewer = viewer;
 
-        shifterSelector.setOnShifted(scanViewer::setEpsilon);
+        this.scanViewer = new ScanViewer(this);
+        this.graphViewer = new GraphViewer(this);
 
-        scanOriginSelector.setOnSelected(samples -> {
-            scanViewer.setOriginSamples(samples);
-            scanTargetSelector.hideItems(samples);
+        this.epsilonShifterSelector = new ShiftSelector(0, 100, DEFAULT_EPSILON);
+        this.epsilonShifterSelector.setOnShifted((epsilon) -> scanViewer.regenerate());
+
+        this.compareOriginScanSelector = new ChecklistSelector<>();
+        this.compareTargetScanSelector = new ChecklistSelector<>();
+
+        this.filterMethodSelector = new DropdownSelector<>();
+        this.filterMethodSelector.add(new AverageFilterMethod());
+        this.filterMethodSelector.add(new CloseAverageFilterMethod());
+
+        this.compareOriginRangeSelector = new ShiftRangeSelector(0, 100, 0, 100);
+        this.compareOriginRangeSelector.setOnShifted((range) -> {
+            graphViewer.getOriginGraphViewer().setVerticalLine("thresholdMin", range.lower() / 100.0f, HighlightRegion.BEFORE);
+            graphViewer.getOriginGraphViewer().setVerticalLine("thresholdMax", range.upper() / 100.0f, HighlightRegion.AFTER);
         });
 
-        scanTargetSelector.setOnSelected(samples -> {
-            scanViewer.setTargetSamples(samples);
-            scanOriginSelector.hideItems(samples);
+        this.compareTargetRangeSelector = new ShiftRangeSelector(0, 100, 0, 100);
+        this.compareTargetRangeSelector.setOnShifted((range) -> {
+            graphViewer.getTargetGraphViewer().setVerticalLine("thresholdMin", range.lower() / 100.0f, HighlightRegion.BEFORE);
+            graphViewer.getTargetGraphViewer().setVerticalLine("thresholdMax", range.upper() / 100.0f, HighlightRegion.AFTER);
         });
 
-        analyzeButton.addActionListener(e -> {
-            if (file == null) {
-                JOptionPane.showMessageDialog(viewer,
-                    "Please load a CSV file to analyze.",
-                    "No file loaded",
-                    JOptionPane.WARNING_MESSAGE
+        this.statisticsTable = new Table();
+        this.statisticsTable.setValue("Amount above epsilon", "N/A");
+        this.statisticsTable.setValue("Coverage (%)", "N/A");
+
+        this.analyzeButton = new JButton("Analyze");
+        this.analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
+        this.analyzeButton.addActionListener(e -> {
+            if (checkSamplesLoaded(true)) {
+                log.info("Analyzing samples: {} with {}",
+                    compareOriginScanSelector.getSelected().stream().map(Sample::getName).toList(),
+                    compareTargetScanSelector.getSelected().stream().map(Sample::getName).toList()
                 );
 
-                return;
+                loadSamples(() -> {
+                    cardLayout.show(viewerPanel, "scan");
+                    scanViewer.show();
+                });
             }
-
-            if (!filterMethodSelector.hasSelected()) {
-                JOptionPane.showMessageDialog(viewer,
-                    "Please select a filter method to use.",
-                    "No filter method selected",
-                    JOptionPane.WARNING_MESSAGE
-                );
-
-                return;
-            }
-
-            if (!scanOriginSelector.hasSelected() || !scanTargetSelector.hasSelected()) {
-                JOptionPane.showMessageDialog(viewer,
-                    "Please select at least one sample to analyze.",
-                    "No sample selected",
-                    JOptionPane.WARNING_MESSAGE
-                );
-
-                return;
-            }
-
-            analyzeSamples();
         });
 
-        statisticsTable.setValue("Amount above epsilon", "N/A");
-        statisticsTable.setValue("Coverage (%)", "N/A");
+        this.graphButton = new JButton("Show graph");
+        this.graphButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, graphButton.getPreferredSize().height));
+        this.graphButton.addActionListener(e -> {
+            if (checkSamplesLoaded(false)) {
+                log.info("Generating graphs for samples: {} with {}",
+                    compareOriginScanSelector.getSelected().stream().map(Sample::getName).toList(),
+                    compareTargetScanSelector.getSelected().stream().map(Sample::getName).toList()
+                );
 
-        filterMethodSelector.add(new AverageFilterMethod());
-        filterMethodSelector.add(new CloseAverageFilterMethod());
+                loadSamples(() -> {
+                    cardLayout.show(viewerPanel, "graph");
+                    graphViewer.show();
+                });
+            }
+        });
     }
 
     public void initUI(JFrame frame) {
         JPanel mainPanel = new JPanel(new BorderLayout());
 
         /*
-         * LEFT PANEL
+         * VIEWER PANEL
          */
 
-        JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 5));
-        mainPanel.add(leftPanel, BorderLayout.CENTER);
+        viewerPanel = new JPanel(cardLayout);
+        viewerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 5));
+        mainPanel.add(viewerPanel, BorderLayout.CENTER);
 
-        // Scan viewer
-        leftPanel.add(scanViewer.getPanel(), BorderLayout.CENTER);
+        viewerPanel.add(scanViewer.getPanel(), "scan");
+        viewerPanel.add(graphViewer.getPanel(), "graph");
+        cardLayout.show(viewerPanel, "scan");
 
         /*
-         * RIGHT PANEL
+         * SIDEBAR PANEL
          */
 
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 10));
-        mainPanel.add(rightPanel, BorderLayout.EAST);
+        JPanel sidebarPanel = new JPanel(new BorderLayout());
+        sidebarPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 10));
+        mainPanel.add(sidebarPanel, BorderLayout.EAST);
 
         // Top
-        JPanel upperPanel = new JPanel();
-        upperPanel.setLayout(new BoxLayout(upperPanel, BoxLayout.Y_AXIS));
-        upperPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        rightPanel.add(upperPanel, BorderLayout.NORTH);
+        // ===========================
 
-        GridPanel gridPanel = new GridPanel(5, 5, BorderFactory.createCompoundBorder(
+        JPanel sidebarUpperPanel = new JPanel();
+        sidebarUpperPanel.setLayout(new BoxLayout(sidebarUpperPanel, BoxLayout.Y_AXIS));
+        sidebarPanel.add(sidebarUpperPanel, BorderLayout.NORTH);
+
+        // Settings
+        GridPanel settingsPanel = new GridPanel(5, 5, BorderFactory.createCompoundBorder(
             BorderFactory.createTitledBorder(" Settings: "),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
-        gridPanel.add(new JLabel("Method:"), filterMethodSelector.getComponent());
-        gridPanel.add(new JLabel("Epsilon:"), shifterSelector.getComponent(true));
-        upperPanel.add(gridPanel.getPanel());
+        settingsPanel.add(new JLabel("Method:"), filterMethodSelector.getComponent());
+        settingsPanel.add(new JLabel("Epsilon:"), epsilonShifterSelector.getComponent());
+        sidebarUpperPanel.add(settingsPanel.getPanel());
 
-        upperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        upperPanel.add(statisticsTable.initUI("Statistics"));
+        // Statistics
+        JPanel statisticsPanel = new JPanel(new BorderLayout());
+        statisticsPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(" Statistics: "),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        statisticsPanel.add(statisticsTable.getPanel(), BorderLayout.CENTER);
+        sidebarUpperPanel.add(statisticsPanel);
 
         // Mid
-        JPanel middlePanel = new JPanel();
-        middlePanel.setLayout(new BoxLayout(middlePanel, BoxLayout.Y_AXIS));
-        rightPanel.add(middlePanel, BorderLayout.CENTER);
+        // ===========================
 
-        middlePanel.add(scanOriginSelector.initUI("Select sample:"));
-        middlePanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        middlePanel.add(scanTargetSelector.initUI("Compare with:"));
+        JPanel sidebarMiddlePanel = new JPanel();
+        sidebarMiddlePanel.setLayout(new BoxLayout(sidebarMiddlePanel, BoxLayout.Y_AXIS));
+        sidebarPanel.add(sidebarMiddlePanel, BorderLayout.CENTER);
+
+        // Select origin samples
+        JPanel selectOriginSamplesPanel = new JPanel();
+        selectOriginSamplesPanel.setLayout(new BoxLayout(selectOriginSamplesPanel, BoxLayout.Y_AXIS));
+        selectOriginSamplesPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(" Select sample: "),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        sidebarMiddlePanel.add(selectOriginSamplesPanel);
+        selectOriginSamplesPanel.add(compareOriginScanSelector.getComponent(true));
+
+        JPanel selectOriginSampleBoundaryPanel = new JPanel(new BorderLayout());
+        selectOriginSampleBoundaryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, selectOriginSampleBoundaryPanel.getPreferredSize().height));
+        selectOriginSampleBoundaryPanel.add(new LabelSeparator(" Boundary limiter: ").getComponent(), BorderLayout.NORTH);
+        selectOriginSampleBoundaryPanel.add(compareOriginRangeSelector.getComponent(true), BorderLayout.CENTER);
+        selectOriginSamplesPanel.add(selectOriginSampleBoundaryPanel);
+
+        // Select target samples
+        JPanel selectTargetSamplesPanel = new JPanel();
+        selectTargetSamplesPanel.setLayout(new BoxLayout(selectTargetSamplesPanel, BoxLayout.Y_AXIS));
+        selectTargetSamplesPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(" Compare with: "),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        sidebarMiddlePanel.add(selectTargetSamplesPanel);
+        selectTargetSamplesPanel.add(compareTargetScanSelector.getComponent(true));
+
+        JPanel selectTargetSampleBoundaryPanel = new JPanel(new BorderLayout());
+        selectTargetSampleBoundaryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, selectTargetSampleBoundaryPanel.getPreferredSize().height));
+        selectTargetSampleBoundaryPanel.add(new LabelSeparator(" Boundary limiter: ").getComponent(), BorderLayout.NORTH);
+        selectTargetSampleBoundaryPanel.add(compareTargetRangeSelector.getComponent(true), BorderLayout.CENTER);
+        selectTargetSamplesPanel.add(selectTargetSampleBoundaryPanel);
 
         // Bottom
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        rightPanel.add(bottomPanel, BorderLayout.SOUTH);
+        // ===========================
 
-        analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
-        bottomPanel.add(analyzeButton, BorderLayout.CENTER);
+        JPanel sidebarBottomPanel = new JPanel();
+        sidebarBottomPanel.setLayout(new BoxLayout(sidebarBottomPanel, BoxLayout.X_AXIS));
+        sidebarBottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        sidebarPanel.add(sidebarBottomPanel, BorderLayout.SOUTH);
+
+        sidebarBottomPanel.add(analyzeButton, BorderLayout.CENTER);
+        sidebarBottomPanel.add(Box.createHorizontalStrut(10));
+        sidebarBottomPanel.add(graphButton, BorderLayout.CENTER);
 
         frame.add(mainPanel);
     }
@@ -179,8 +244,8 @@ public class Analyzer {
             this.samples.addAll(samples);
 
             statisticsTable.clear(false);
-            scanOriginSelector.setItems(samples);
-            scanTargetSelector.setItems(samples);
+            compareOriginScanSelector.setItems(samples);
+            compareTargetScanSelector.setItems(samples);
 
             log.info("Finished loading CSV file in {}ms. Found total {} samples", System.currentTimeMillis() - startTime, samples.size());
         } catch (CancellationException ignored) {
@@ -193,19 +258,48 @@ public class Analyzer {
     public void closeFile() {
         statisticsTable.clear(false);
         scanViewer.closeSample();
-        scanOriginSelector.clearItems();
-        scanTargetSelector.clearItems();
+        compareOriginScanSelector.clearItems();
+        compareTargetScanSelector.clearItems();
     }
 
-    public void analyzeSamples() {
-        log.info("Analyzing samples: {} with {}",
-            scanOriginSelector.getSelected().stream().map(Sample::getName).toList(),
-            scanTargetSelector.getSelected().stream().map(Sample::getName).toList()
-        );
+    private boolean checkSamplesLoaded(boolean checkMethod) {
+        if (file == null) {
+            JOptionPane.showMessageDialog(viewer,
+                "Please load a CSV file to analyze.",
+                "No file loaded",
+                JOptionPane.WARNING_MESSAGE
+            );
 
+            return false;
+        }
+
+        if (!compareOriginScanSelector.hasSelected() || !compareTargetScanSelector.hasSelected()) {
+            JOptionPane.showMessageDialog(viewer,
+                "Please select at least one sample to analyze.",
+                "No sample selected",
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            return false;
+        }
+
+        if (checkMethod && !filterMethodSelector.hasSelected()) {
+            JOptionPane.showMessageDialog(viewer,
+                "Please select a filter method to use.",
+                "No filter method selected",
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void loadSamples(Runnable callback) {
         List<Sample> samplesToLoad = new ArrayList<>();
-        samplesToLoad.addAll(scanOriginSelector.getSelected());
-        samplesToLoad.addAll(scanTargetSelector.getSelected());
+        samplesToLoad.addAll(compareOriginScanSelector.getSelected());
+        samplesToLoad.addAll(compareTargetScanSelector.getSelected());
 
         // Unload the samples that are not needed
         samples.stream()
@@ -227,7 +321,7 @@ public class Analyzer {
 
         if (samplesToLoad.isEmpty()) {
             log.info("All samples are already loaded, skipping the loading process.");
-            scanViewer.generate();
+            callback.run();
         } else {
             long startTime = System.currentTimeMillis();
             log.info(" - Found samples to load: {}", samplesToLoad.stream().map(Sample::getName).toList());
@@ -244,7 +338,7 @@ public class Analyzer {
             try {
                 List<Sample> loadedSamples = worker.get();
                 log.info("Finished loading samples in {}ms", System.currentTimeMillis() - startTime);
-                scanViewer.generate();
+                callback.run();
             } catch (CancellationException ignored) {
                 log.warn("Loading the samples was cancelled by the user.");
             } catch (ExecutionException | InterruptedException e) {

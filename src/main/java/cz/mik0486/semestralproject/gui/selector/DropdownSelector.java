@@ -2,12 +2,14 @@ package cz.mik0486.semestralproject.gui.selector;
 
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import java.util.function.Consumer;
 
+@Slf4j
 @Setter
 public class DropdownSelector<T> {
     private final JComboBox<T> comboBox = new JComboBox<>();

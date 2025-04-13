@@ -1,5 +1,6 @@
 package cz.mik0486.semestralproject.data.holder;
 
+import cz.mik0486.semestralproject.gui.selector.range.Range;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ public class Matrix {
         this.data = new ArrayList<>(rows * columns);
         this.data.addAll(Collections.nCopies(rows * columns, defaultValue));
 
-        apply(func);
+        compute(func);
     }
 
     public void setData(Vector<Float> data) {
@@ -60,26 +61,51 @@ public class Matrix {
         return data.get(index);
     }
 
+    private boolean indexOutOfBounds(int row, int column) {
+        int index = row * columns + column;
+        return index >= data.size();
+    }
+
     public long size() {
         return data.size();
     }
 
-    public void apply(Function<Float, Float> func) {
+    public void compute(Function<Float, Float> func) {
         for (int i = 0; i < this.rows; i++) {
             for (int j = 0; j < this.columns; j++) {
+                if (indexOutOfBounds(i, j)) {
+                    continue;
+                }
+
                 float value = func.apply(getValue(i, j));
                 setValue(i, j, value);
             }
         }
     }
 
-    public void apply(MatrixElementFunction func) {
+    public void compute(MatrixElementFunction func) {
         for (int i = 0; i < this.rows; i++) {
             for (int j = 0; j < this.columns; j++) {
+                if (indexOutOfBounds(i, j)) {
+                    continue;
+                }
+
                 float value = func.apply(i, j, getValue(i, j));
                 setValue(i, j, value);
             }
         }
+    }
+
+    public void applyBoundary(Range boundary) {
+        this.compute((x, y, value) -> {
+            if (value < (boundary.lower() / 100.f)) {
+                return 0.0f;
+            } else if (value > (boundary.upper() / 100.f)) {
+                return 1.0f;
+            }
+
+            return value;
+        });
     }
 
     public static Pair<Integer, Integer> calculateDimensions(int size) {

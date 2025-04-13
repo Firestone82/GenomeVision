@@ -5,7 +5,6 @@ import cz.mik0486.semestralproject.gui.LabelSeparator;
 import cz.mik0486.semestralproject.gui.ProgressiveDialog;
 import cz.mik0486.semestralproject.gui.Table;
 import cz.mik0486.semestralproject.gui.panel.GridPanel;
-import cz.mik0486.semestralproject.gui.panel.graph.HighlightRegion;
 import cz.mik0486.semestralproject.gui.selector.ChecklistSelector;
 import cz.mik0486.semestralproject.gui.selector.DropdownSelector;
 import cz.mik0486.semestralproject.gui.selector.ShiftRangeSelector;
@@ -63,7 +62,11 @@ public class Analyzer {
         this.graphViewer = new GraphViewer(this);
 
         this.epsilonShifterSelector = new ShiftSelector(0, 100, DEFAULT_EPSILON);
-        this.epsilonShifterSelector.setOnShifted((epsilon) -> scanViewer.regenerate());
+        this.epsilonShifterSelector.setOnShifted((epsilon) -> {
+            if (viewerPanel.getComponent(0).isShowing()) {
+                scanViewer.update();
+            }
+        });
 
         this.compareOriginScanSelector = new ChecklistSelector<>();
         this.compareTargetScanSelector = new ChecklistSelector<>();
@@ -74,14 +77,20 @@ public class Analyzer {
 
         this.compareOriginRangeSelector = new ShiftRangeSelector(0, 100, 0, 100);
         this.compareOriginRangeSelector.setOnShifted((range) -> {
-            graphViewer.getOriginGraphViewer().setVerticalLine("thresholdMin", range.lower() / 100.0f, HighlightRegion.BEFORE);
-            graphViewer.getOriginGraphViewer().setVerticalLine("thresholdMax", range.upper() / 100.0f, HighlightRegion.AFTER);
+            if (viewerPanel.getComponent(0).isShowing()) {
+                scanViewer.update();
+            } else {
+                graphViewer.update();
+            }
         });
 
         this.compareTargetRangeSelector = new ShiftRangeSelector(0, 100, 0, 100);
         this.compareTargetRangeSelector.setOnShifted((range) -> {
-            graphViewer.getTargetGraphViewer().setVerticalLine("thresholdMin", range.lower() / 100.0f, HighlightRegion.BEFORE);
-            graphViewer.getTargetGraphViewer().setVerticalLine("thresholdMax", range.upper() / 100.0f, HighlightRegion.AFTER);
+            if (viewerPanel.getComponent(0).isShowing()) {
+                scanViewer.update();
+            } else {
+                graphViewer.update();
+            }
         });
 
         this.statisticsTable = new Table();
@@ -91,7 +100,7 @@ public class Analyzer {
         this.analyzeButton = new JButton("Analyze");
         this.analyzeButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, analyzeButton.getPreferredSize().height));
         this.analyzeButton.addActionListener(e -> {
-            if (checkSamplesLoaded(true)) {
+            if (checkSamplesLoaded()) {
                 log.info("Analyzing samples: {} with {}",
                     compareOriginScanSelector.getSelected().stream().map(Sample::getName).toList(),
                     compareTargetScanSelector.getSelected().stream().map(Sample::getName).toList()
@@ -107,7 +116,7 @@ public class Analyzer {
         this.graphButton = new JButton("Show graph");
         this.graphButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, graphButton.getPreferredSize().height));
         this.graphButton.addActionListener(e -> {
-            if (checkSamplesLoaded(false)) {
+            if (checkSamplesLoaded()) {
                 log.info("Generating graphs for samples: {} with {}",
                     compareOriginScanSelector.getSelected().stream().map(Sample::getName).toList(),
                     compareTargetScanSelector.getSelected().stream().map(Sample::getName).toList()
@@ -262,7 +271,7 @@ public class Analyzer {
         compareTargetScanSelector.clearItems();
     }
 
-    private boolean checkSamplesLoaded(boolean checkMethod) {
+    private boolean checkSamplesLoaded() {
         if (file == null) {
             JOptionPane.showMessageDialog(viewer,
                 "Please load a CSV file to analyze.",
@@ -283,7 +292,7 @@ public class Analyzer {
             return false;
         }
 
-        if (checkMethod && !filterMethodSelector.hasSelected()) {
+        if (!filterMethodSelector.hasSelected()) {
             JOptionPane.showMessageDialog(viewer,
                 "Please select a filter method to use.",
                 "No filter method selected",

@@ -1,14 +1,16 @@
 package cz.mik0486.semestralproject.viewer.analyzer.gui;
 
+import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Sample;
 import cz.mik0486.semestralproject.gui.panel.graph.GraphPanel;
+import cz.mik0486.semestralproject.gui.panel.graph.HighlightRegion;
+import cz.mik0486.semestralproject.gui.selector.range.Range;
 import cz.mik0486.semestralproject.viewer.analyzer.Analyzer;
+import cz.mik0486.semestralproject.viewer.analyzer.method.FilterMethod;
 import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -37,37 +39,30 @@ public class GraphViewer {
     }
 
     private List<Point2D> calculateGraphPoints(List<Sample> samples) {
-        HashMap<Float, Integer> xMap = new HashMap<>(); // Amount of samples with the same x value
+        HashMap<Float, Integer> xMap = new HashMap<>();
 
-        for (Sample sample : samples) {
-            if (sample.getMatrix() == null) {
-                continue;
-            }
+        FilterMethod filterMethod = analyzer.getFilterMethodSelector().getSelected();
+        Matrix filteredMatrix = filterMethod.process(samples);
 
-            for (float value : sample.getMatrix().getData()) {
-                float roundedValue = Math.round(value * 100.0f) / 100.0f;
-                xMap.put(roundedValue, xMap.getOrDefault(roundedValue, 0) + 1);
-            }
+        for (float val : filteredMatrix.getData()) {
+            float roundedValue = Math.round(val * 100.0f) / 100.0f;
+            xMap.put(roundedValue, xMap.getOrDefault(roundedValue, 0) + 1);
         }
 
-        List<Point2D> points = new ArrayList<>();
-        for (Float x : xMap.keySet()) {
-            int y = xMap.get(x);
-            points.add(new Point2D.Float(x, y));
-        }
-
-        // Order points by x value
-        points.sort(Comparator.comparingDouble(Point2D::getX));
-
-        return points;
+        return xMap.keySet().stream()
+            .sorted()
+            .map(x -> (Point2D) new Point2D.Float(x, xMap.get(x)))
+            .toList();
     }
 
-    public void regenerate() {
-        if (!panel.isVisible()) {
-            return;
-        }
+    public void update() {
+        Range originBoundaryRange = analyzer.getCompareOriginRangeSelector().getValue();
+        originGraphViewer.setVerticalLine("thresholdMin", originBoundaryRange.lower() / 100.0f, HighlightRegion.BEFORE);
+        originGraphViewer.setVerticalLine("thresholdMax", originBoundaryRange.upper() / 100.0f, HighlightRegion.AFTER);
 
-
+        Range targetBoundaryRange = analyzer.getCompareTargetRangeSelector().getValue();
+        targetGraphViewer.setVerticalLine("thresholdMin", targetBoundaryRange.lower() / 100.0f, HighlightRegion.BEFORE);
+        targetGraphViewer.setVerticalLine("thresholdMax", targetBoundaryRange.upper() / 100.0f, HighlightRegion.AFTER);
     }
 
     public void show() {

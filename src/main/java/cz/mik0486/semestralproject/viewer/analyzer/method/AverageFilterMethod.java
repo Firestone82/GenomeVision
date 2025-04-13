@@ -2,9 +2,11 @@ package cz.mik0486.semestralproject.viewer.analyzer.method;
 
 import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Sample;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 public class AverageFilterMethod extends FilterMethod {
 
     public Matrix process(List<Sample> samples) {

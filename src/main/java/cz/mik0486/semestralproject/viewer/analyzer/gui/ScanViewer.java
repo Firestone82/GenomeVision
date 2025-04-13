@@ -39,7 +39,7 @@ public class ScanViewer extends ZoomableGrabbablePanel {
         }
     }
 
-    public void regenerate() {
+    public void update() {
         if (cachedImage != null) {
             show();
         }
@@ -51,6 +51,8 @@ public class ScanViewer extends ZoomableGrabbablePanel {
         Matrix matrix = analyzer.getFilterMethodSelector().getSelected().calculate(
             analyzer.getCompareOriginScanSelector().getSelected(),
             analyzer.getCompareTargetScanSelector().getSelected(),
+            analyzer.getCompareOriginRangeSelector().getValue(),
+            analyzer.getCompareTargetRangeSelector().getValue(),
             analyzer.getEpsilonShifterSelector().getValue()
         );
 

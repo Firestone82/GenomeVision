@@ -30,7 +30,6 @@ public class CloseAverageFilterMethod extends AverageFilterMethod {
         }
 
         return bestMatrix;
-
     }
 
     private double matrixDifference(Matrix m1, Matrix m2) {

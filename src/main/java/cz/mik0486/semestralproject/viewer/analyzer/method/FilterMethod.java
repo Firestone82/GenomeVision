@@ -26,28 +26,27 @@ public abstract class FilterMethod {
         return new Matrix(rows, columns, defaultValue, (x, y, currentValue) -> {
             float originValue = originMatrix.getValue(y, x);
             float targetValue = targetMatrix.getValue(y, x);
-            float diff = Math.abs(originValue - targetValue);
 
-            // Guard against division by zero by using the maximum of the absolute values.
-            float maxValue = Math.max(Math.abs(originValue), Math.abs(targetValue));
-
-            // If both values are 0, they are the same; we return 0.
-            if (maxValue == 0.0f) {
-                return 0.0f;
+            if (inTolerance(originValue, targetValue, epsilon)) {
+                return 0.f;
             }
 
-            // Calculate the relative difference in percentage.
-            float percentDifference = (diff / maxValue) * 100.0f;
-
-            // When the values are within the tolerance margin, ignore them by setting the result to 0.
-            if (percentDifference <= epsilon) {
-                return 0.0f;
-            } else {
-                // Otherwise, the values are different enough; we interpolate (here using average).
-//                return (originValue + targetValue) / 2.0f;
-                return originValue;
-            }
+            return originValue;
         });
+    }
+
+    private boolean inTolerance(float originValue, float targetValue, float epsilon) {
+        if (originValue == targetValue) {
+            return true;
+        }
+
+        float diff = Math.abs(targetValue - originValue);
+
+        // Use the larger absolute value of the two as the reference
+        float reference = Math.max(Math.abs(originValue), Math.abs(targetValue));
+        float tolerance = reference * (epsilon / 100.f);
+
+        return diff <= tolerance;
     }
 
     public abstract String getName();

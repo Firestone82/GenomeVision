@@ -132,6 +132,13 @@ public class ChecklistSelector<T> {
         checkboxes.clear();
         column1.removeAll();
         column2.removeAll();
+
+        // Redraw
+        column1.revalidate();
+        column1.repaint();
+
+        column2.revalidate();
+        column2.repaint();
     }
 
     public List<T> getSelected() {

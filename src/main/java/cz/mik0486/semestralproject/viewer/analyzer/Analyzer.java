@@ -17,6 +17,7 @@ import cz.mik0486.semestralproject.viewer.analyzer.method.CloseAverageFilterMeth
 import cz.mik0486.semestralproject.viewer.analyzer.method.FilterMethod;
 import cz.mik0486.semestralproject.viewer.analyzer.worker.FileLoadWorker;
 import cz.mik0486.semestralproject.viewer.analyzer.worker.SamplesLoadWorker;
+import cz.mik0486.semestralproject.viewer.settings.Settings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ public class Analyzer {
     private static final int DEFAULT_EPSILON = 50;
 
     private final Viewer viewer;
+    private final Settings settings;
+
     private final List<Sample> samples = new ArrayList<>();
     private File file;
 
@@ -128,6 +131,9 @@ public class Analyzer {
                 });
             }
         });
+
+        this.settings = new Settings(this);
+        this.settings.setOnChange(this.scanViewer::update);
     }
 
     public void initUI(JFrame frame) {
@@ -160,9 +166,9 @@ public class Analyzer {
         sidebarUpperPanel.setLayout(new BoxLayout(sidebarUpperPanel, BoxLayout.Y_AXIS));
         sidebarPanel.add(sidebarUpperPanel, BorderLayout.NORTH);
 
-        // Settings
+        // SettingsData
         GridPanel settingsPanel = new GridPanel(5, 5, BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(" Settings: "),
+            BorderFactory.createTitledBorder(" SettingsData: "),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
         settingsPanel.add(new JLabel("Method:"), filterMethodSelector.getComponent());

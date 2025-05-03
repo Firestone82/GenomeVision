@@ -33,7 +33,7 @@ public class GridPanel {
      * Adds a new row to the grid with the provided components.
      * Each row can have a variable number of columns.
      * If a row is added with fewer components than desired, no extra fillers are added.
-     *
+     * <p>
      * Gaps are applied only between cells:
      * <ul>
      *   <li>No vertical gap above the first row.</li>
@@ -56,6 +56,28 @@ public class GridPanel {
             gbc.insets = new Insets(topInset, leftInset, 0, 0);
             panel.add(components[i], gbc);
         }
+
+        currentRow++;
+    }
+
+    /**
+     * Adds a single component that spans multiple columns in the current row.
+     * Useful for a full-width component when you only have one item on the row.
+     *
+     * @param component The component to add.
+     * @param colSpan   The number of columns to span.
+     */
+    public void add(Component component, int colSpan) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = currentRow;
+        gbc.gridx = 0;
+        gbc.gridwidth = colSpan;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        int topInset = (currentRow == 0) ? 0 : gapY;
+        // no left gap when spanning from first column
+        gbc.insets = new Insets(topInset, 0, 0, 0);
+        panel.add(component, gbc);
 
         currentRow++;
     }

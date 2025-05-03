@@ -22,6 +22,6 @@ public class SettingsMenuItem extends JMenuItem implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // TODO: Open settings dialog
+        viewer.getAnalyzer().getSettings().getSettingsDialog().open();
     }
 }

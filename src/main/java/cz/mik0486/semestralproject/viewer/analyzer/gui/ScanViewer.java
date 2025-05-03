@@ -62,7 +62,14 @@ public class ScanViewer extends ZoomableGrabbablePanel {
         float percentage = MathUtils.round(100 - (amountAboveEps / (float) matrix.size() * 100), 3);
         analyzer.getStatisticsTable().setValue("Coverage (%)", percentage);
 
-        ImageMatrixLoadWorker worker = new ImageMatrixLoadWorker(matrix, CELL_WIDTH, CELL_HEIGHT);
+        ImageMatrixLoadWorker worker = new ImageMatrixLoadWorker(
+            matrix,
+            CELL_WIDTH,
+            CELL_HEIGHT,
+            analyzer.getSettings().getEmptyCellColor(),
+            analyzer.getSettings().getGradientStartColor(),
+            analyzer.getSettings().getGradientEndColor()
+        );
         worker.execute();
 
         new ProgressiveDialog<BufferedImage>(

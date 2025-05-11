@@ -1,4 +1,4 @@
-package cz.mik0486.semestralprojekt.gen;
+package cz.mik0486.semestralprojekt;
 
 import cz.mik0486.semestralproject.data.holder.Matrix;
 import cz.mik0486.semestralproject.data.holder.Pair;

@@ -1,8 +1,8 @@
 # GenomeVision
 
-**Author:** [Vaše jméno]
+**Author:** Pavel Mikula
 
-A standalone Java (11+) desktop application built with Swing for interactive analysis and visualization of large-scale genetic data in CSV format. GenomeVision lets you load, filter and compare DNA sample matrices, compute similarity metrics, and render the results as an interactive heatmap or exportable graphic.
+A standalone Java (21+) desktop application built with Swing for interactive analysis and visualization of large-scale genetic data in CSV format. GenomeVision lets you load, filter and compare DNA sample matrices, compute similarity metrics, and render the results as an interactive heatmap or exportable graphic.
 
 > **Note:** All processing is done locally—no genetic data leaves your machine. This tool is provided “as-is” for private or institutional use; adapt as needed. No warranty is provided.
 
@@ -23,7 +23,7 @@ A standalone Java (11+) desktop application built with Swing for interactive ana
 ## 🧰 Prerequisites
 
 ### Software
-- **Java 11+**
+- **Java 21+**
 - **Maven 3.x**
 - Desktop OS: Windows, macOS or Linux with a GUI environment
 

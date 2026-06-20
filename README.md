@@ -1,54 +1,49 @@
 # GenomeVision
 
-**Author:** Pavel Mikula
+Desktop application for interactive analysis and visualization of large-scale genetic data in CSV format.
 
-A standalone Java (21+) desktop application built with Swing for interactive analysis and visualization of large-scale genetic data in CSV format. GenomeVision lets you load, filter and compare DNA sample matrices, compute similarity metrics, and render the results as an interactive heatmap or exportable graphic.
+![Java](https://img.shields.io/badge/Java-21%2B-orange) ![Maven](https://img.shields.io/badge/Build-Maven-blue)
 
-> **Note:** All processing is done locally—no genetic data leaves your machine. This tool is provided “as-is” for private or institutional use; adapt as needed. No warranty is provided.
+## About
 
-## 🚀 Features
-- **Lazy-Loading CSV Import**
-  — Fast initial load by reading only record names, full data streams in background
-- **Responsive Progress Indicator**
-  — Asynchronous progress bar keeps the GUI fluid even for hundred-thousand-row files
-- **Interactive Sample Filtering**
-  — Search, select and subset your DNA samples in the GUI without writing any code
-- **Custom Similarity Parameter (ε)**
-  — Adjust epsilon to tune your similarity/distance calculations on the fly
-- **Dynamic Heatmap Generation**
-  — Zoomable, pannable matrix view with tooltips showing exact values
-- **Exportable Results**
-  — Save your final matrix as PNG, SVG or CSV for presentations and downstream analysis
+GenomeVision loads large DNA sample datasets from CSV files and provides tools to filter, compare, and visualize genetic similarity. File import runs asynchronously with a progress indicator so the UI stays responsive even for large datasets. Results are displayed as an interactive heatmap with zoom and pan, and can be exported locally in multiple formats. No data leaves your machine.
 
-## 🧰 Prerequisites
+## Features
 
-### Software
-- **Java 21+**
-- **Maven 3.x**
-- Desktop OS: Windows, macOS or Linux with a GUI environment
+- Lazy-loading CSV import: reads sample names first, processes full data in the background
+- Responsive progress indicator during file loading
+- Sample filtering and multi-selection without writing code
+- Heatmap visualization with zoom and pan
+- Configurable epsilon parameter for similarity threshold tuning
+- Export to PNG, SVG, and CSV
 
-### Data
-- One or more **CSV files** containing DNA sample intensities
-    - First row: sample identifiers
-    - Subsequent rows: probe IDs + intensity values
-- Typical file sizes: tens of thousands to millions of probes
+## Requirements
 
-## 🛠 Installation & Setup
-1. **Clone the repository**
+- Java 21+
+- Maven 3.x
+
+## Setup
+
+1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/GenomeVision.git
+   git clone https://github.com/Firestone82/GenomeVision.git
    cd GenomeVision
-
-2. **Build the project**
-   ```bash
-   mvn clean package
    ```
 
-3. **Run the application**
+2. Build the project:
    ```bash
-    java -jar target/GenomeVision-*.jar
-    ```
+   mvn clean package -DskipTests
+   ```
 
-## 📜 Logs
-Logs are stored in logs/ directory
-- Daily rotation with compression to conserve space
+3. Run the application:
+   ```bash
+   java -jar target/GenomeVision-*.jar
+   ```
+
+### Input data format
+
+CSV with sample identifiers in the first row and probe IDs with intensity values in subsequent rows.
+
+## License
+
+MIT License

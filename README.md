@@ -2,19 +2,19 @@
 
 Desktop application for interactive analysis and visualization of large-scale genetic data in CSV format.
 
-![Java](https://img.shields.io/badge/Java-21%2B-orange) ![Build](https://img.shields.io/badge/Build-Maven-blue)
+![Java](https://img.shields.io/badge/Java-21%2B-orange) ![Maven](https://img.shields.io/badge/Build-Maven-blue)
 
 ## About
 
-GenomeVision loads large DNA sample datasets from CSV files and provides tools to filter, compare, and visualize genetic similarity. Analysis runs asynchronously to keep the UI responsive even when processing thousands of samples. Results can be explored interactively via a zoomable heatmap and exported in PNG, SVG, or CSV format. All data stays local — nothing is sent to external services.
+GenomeVision loads large DNA sample datasets from CSV files and provides tools to filter, compare, and visualize genetic similarity. File import runs asynchronously with a progress indicator so the UI stays responsive even for large datasets. Results are displayed as an interactive heatmap with zoom and pan, and can be exported locally in multiple formats. No data leaves your machine.
 
 ## Features
 
-- Lazy-loading CSV import: reads sample names first, loads full data in the background
-- Responsive progress indicator during file processing
+- Lazy-loading CSV import: reads sample names first, processes full data in the background
+- Responsive progress indicator during file loading
 - Sample filtering and multi-selection without writing code
 - Heatmap visualization with zoom and pan
-- Configurable epsilon parameter for tuning similarity calculations
+- Configurable epsilon parameter for similarity threshold tuning
 - Export to PNG, SVG, and CSV
 
 ## Requirements
@@ -24,16 +24,25 @@ GenomeVision loads large DNA sample datasets from CSV files and provides tools t
 
 ## Setup
 
-```bash
-git clone https://github.com/Firestone82/GenomeVision.git
-cd GenomeVision
-mvn clean package
-java -jar target/GenomeVision-*.jar
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Firestone82/GenomeVision.git
+   cd GenomeVision
+   ```
 
-### Input format
+2. Build the project:
+   ```bash
+   mvn clean package -DskipTests
+   ```
 
-CSV files with sample identifiers in the first row and probe IDs with intensity values in subsequent rows.
+3. Run the application:
+   ```bash
+   java -jar target/GenomeVision-*.jar
+   ```
+
+### Input data format
+
+CSV with sample identifiers in the first row and probe IDs with intensity values in subsequent rows.
 
 ## License
 
